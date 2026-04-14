@@ -1,0 +1,168 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
+@import "tailwindcss";
+
+/* Pixel Theme CSS Variables */
+:root {
+  --bg-primary: #0a0a0f;
+  --bg-secondary: #0f0f1a;
+  --bg-panel: #13131f;
+  --bg-highlight: #1a1a2e;
+  --neon-green: #00ff88;
+  --neon-blue: #00d4ff;
+  --neon-purple: #b44fff;
+  --neon-yellow: #ffdd00;
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-muted: #475569;
+  --border-primary: #2d2d4e;
+  --border-accent: #00ff88;
+}
+
+/* Custom theme extensions untuk Tailwind v4 */
+@theme {
+  --color-pixel-dark: #0a0a0f;
+  --color-pixel-darker: #0f0f1a;
+  --color-pixel-panel: #13131f;
+  --color-pixel-highlight: #1a1a2e;
+  --color-neon-green: #00ff88;
+  --color-neon-blue: #00d4ff;
+  --color-neon-purple: #b44fff;
+  --color-neon-yellow: #ffdd00;
+  --color-text-primary: #e2e8f0;
+  --color-text-secondary: #94a3b8;
+  --color-text-muted: #475569;
+  
+  --font-pixel: "Press Start 2P", monospace;
+  --font-mono: "VT323", "Courier New", monospace;
+  
+  --animate-pixel-blink: blink 1s step-end infinite;
+  --animate-glow-pulse: glow 2s ease-in-out infinite;
+  
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+  
+  @keyframes glow {
+    0%, 100% { text-shadow: 0 0 5px #00ff88, 0 0 10px #00ff88; }
+    50% { text-shadow: 0 0 15px #00ff88, 0 0 25px #00ff88; }
+  }
+}
+
+/* Global styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'VT323', 'Courier New', monospace;
+}
+
+/* Scanline Effect */
+.scanline-overlay::after {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.1) 2px,
+    rgba(0, 0, 0, 0.1) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-primary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--neon-green);
+  border: 1px solid var(--bg-primary);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--neon-blue);
+}
+
+/* Glow text utility */
+.glow-text {
+  text-shadow: 0 0 5px var(--neon-green), 0 0 10px var(--neon-green);
+}
+
+/* Pixel border utility */
+.pixel-border {
+  border: 2px solid var(--border-accent);
+  box-shadow: 4px 4px 0px rgba(0, 255, 136, 0.2);
+}
+
+/* Additional pixel effects for Step 2 */
+@keyframes pixel-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.animate-pixel-blink {
+  animation: pixel-blink 1s step-end infinite;
+}
+
+/* CRT flicker effect */
+@keyframes crt-flicker {
+  0% { opacity: 1; }
+  10% { opacity: 0.97; }
+  20% { opacity: 0.99; }
+  30% { opacity: 0.98; }
+  40% { opacity: 1; }
+  50% { opacity: 0.96; }
+  60% { opacity: 0.99; }
+  70% { opacity: 0.98; }
+  80% { opacity: 1; }
+  90% { opacity: 0.97; }
+  100% { opacity: 1; }
+}
+
+.crt-flicker {
+  animation: crt-flicker 8s infinite;
+}
+
+/* Pixelated border glow */
+.pixel-border-glow {
+  border: 2px solid var(--neon-green);
+  box-shadow: 
+    0 0 5px var(--neon-green),
+    inset 0 0 5px var(--neon-green);
+}
+
+/* Typewriter text effect */
+.typewriter {
+  overflow: hidden;
+  border-right: 2px solid var(--neon-green);
+  white-space: nowrap;
+  animation: typing 3.5s steps(40, end), blink-caret 0.75s step-end infinite;
+}
+
+@keyframes typing {
+  from { width: 0; }
+  to { width: 100%; }
+}
+
+@keyframes blink-caret {
+  from, to { border-color: transparent; }
+  50% { border-color: var(--neon-green); }
+}
