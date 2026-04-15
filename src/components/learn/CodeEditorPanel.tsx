@@ -19,12 +19,16 @@ interface CodeEditorPanelProps {
   starterCode: string
   solutionCode: string
   onCodeChange?: (code: string) => void
+  onRun?: (code: string) => void
+  isRunning?: boolean
 }
 
 export default function CodeEditorPanel({
   starterCode,
   solutionCode,
   onCodeChange,
+  onRun,
+  isRunning = false,
 }: CodeEditorPanelProps) {
   const [code, setCode] = useState(starterCode)
   const [showSolution, setShowSolution] = useState(false)
@@ -49,6 +53,10 @@ export default function CodeEditorPanel({
     setShowSolution(!showSolution)
   }
 
+  const handleRun = () => {
+    onRun?.(code)
+  }
+
   return (
     <PixelCard glow>
       <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
@@ -65,10 +73,11 @@ export default function CodeEditorPanel({
           </PixelButton>
           <PixelButton 
             variant="primary" 
+            onClick={handleRun}
             className="text-[8px] py-1 px-3"
-            // TODO: Connect to interpreter in Step 4
+            disabled={isRunning}
           >
-            ▶ RUN
+            {isRunning ? '⚡ RUNNING...' : '▶ RUN'}
           </PixelButton>
         </div>
       </div>

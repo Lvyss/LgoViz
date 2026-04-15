@@ -1,15 +1,24 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import PixelButton from '../ui/PixelButton'
 import { useEffect, useState } from 'react'
 
 export default function Navbar() {
+  const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
   const [user, setUser] = useState<any>(null)
+  const [scrolled, setScrolled] = useState(false)
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20)
+    }
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
   useEffect(() => {
     const getUser = async () => {
@@ -32,40 +41,69 @@ export default function Navbar() {
   }
 
   return (
-    <nav className="border-b-2 border-neon-green bg-pixel-darker/90 backdrop-blur-sm sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 py-3 md:py-4 flex justify-between items-center">
-        <Link href="/" className="group">
-          <h1 className="font-pixel text-sm md:text-base text-neon-green hover:text-neon-blue transition-colors">
-            Lgo<span className="text-neon-blue">Viz</span>
-          </h1>
-        </Link>
+    <nav
+      className={`fixed top-0 w-full z-50 transition-all duration-300 ${
+        scrolled
+          ? 'bg-[#0a0a0f]/90 backdrop-blur-xl border-b border-white/10'
+          : 'bg-transparent'
+      }`}
+    >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16">
+          {/* Logo */}
+          <Link href="/" className="group">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center">
+                <span className="text-white font-bold text-sm">L</span>
+              </div>
+              <span className="font-semibold text-lg tracking-tight">
+                <span className="text-white">Lgo</span>
+                <span className="text-emerald-400">Viz</span>
+              </span>
+            </div>
+          </Link>
 
-        <div className="flex gap-2 md:gap-4 items-center">
-          {user ? (
-            <>
-              <Link href="/dashboard">
-                <PixelButton variant="secondary" className="text-[8px] md:text-[10px] py-2 md:py-3 px-3 md:px-4">
-                  Dashboard
-                </PixelButton>
-              </Link>
-              <PixelButton onClick={handleLogout} className="text-[8px] md:text-[10px] py-2 md:py-3 px-3 md:px-4">
-                Logout
-              </PixelButton>
-            </>
-          ) : (
-            <>
-              <Link href="/auth/login">
-                <PixelButton variant="secondary" className="text-[8px] md:text-[10px] py-2 md:py-3 px-3 md:px-4">
+          {/* Navigation Links - Desktop */}
+          <div className="hidden md:flex items-center gap-8">
+            <Link
+              href="/dashboard"
+              className="text-sm text-gray-300 hover:text-white transition-colors"
+            >
+              Dashboard
+            </Link>
+          </div>
+
+          {/* Auth Buttons */}
+          <div className="flex items-center gap-3">
+            {user ? (
+              <>
+                <span className="text-sm text-gray-400 hidden lg:block">
+                  {user.email?.split('@')[0]}
+                </span>
+                <button
+                  onClick={handleLogout}
+                  className="px-4 py-2 text-sm font-medium text-gray-300 hover:text-white transition-colors"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/auth/login"
+                  className="px-4 py-2 text-sm font-medium text-gray-300 hover:text-white transition-colors"
+                >
                   Login
-                </PixelButton>
-              </Link>
-              <Link href="/auth/register">
-                <PixelButton className="text-[8px] md:text-[10px] py-2 md:py-3 px-3 md:px-4">
+                </Link>
+                <Link
+                  href="/auth/register"
+                  className="px-4 py-2 text-sm font-medium bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg hover:shadow-lg hover:shadow-emerald-500/25 transition-all"
+                >
                   Register
-                </PixelButton>
-              </Link>
-            </>
-          )}
+                </Link>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </nav>

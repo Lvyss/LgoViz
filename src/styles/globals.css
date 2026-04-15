@@ -1,71 +1,201 @@
-@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
-@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=JetBrains+Mono:wght@400;500&display=swap');
 
-/* Pixel Theme CSS Variables */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 :root {
-  --bg-primary: #0a0a0f;
-  --bg-secondary: #0f0f1a;
-  --bg-panel: #13131f;
-  --bg-highlight: #1a1a2e;
-  --neon-green: #00ff88;
-  --neon-blue: #00d4ff;
-  --neon-purple: #b44fff;
-  --neon-yellow: #ffdd00;
-  --text-primary: #e2e8f0;
-  --text-secondary: #94a3b8;
-  --text-muted: #475569;
-  --border-primary: #2d2d4e;
-  --border-accent: #00ff88;
-}
-
-/* Custom theme extensions untuk Tailwind v4 */
-@theme {
+  --color-neon-green: #10b981;
+  --color-neon-blue: #3b82f6;
+  --color-neon-purple: #8b5cf6;
+  --color-neon-yellow: #f59e0b;
+  
   --color-pixel-dark: #0a0a0f;
   --color-pixel-darker: #0f0f1a;
   --color-pixel-panel: #13131f;
   --color-pixel-highlight: #1a1a2e;
-  --color-neon-green: #00ff88;
-  --color-neon-blue: #00d4ff;
-  --color-neon-purple: #b44fff;
-  --color-neon-yellow: #ffdd00;
-  --color-text-primary: #e2e8f0;
+  
+  --color-text-primary: #f1f5f9;
   --color-text-secondary: #94a3b8;
-  --color-text-muted: #475569;
+  --color-text-muted: #64748b;
   
-  --font-pixel: "Press Start 2P", monospace;
-  --font-mono: "VT323", "Courier New", monospace;
+  /* Fonts */
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  --font-pixel: 'JetBrains Mono', 'Courier New', monospace;
   
-  --animate-pixel-blink: blink 1s step-end infinite;
-  --animate-glow-pulse: glow 2s ease-in-out infinite;
+  /* Border Radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
   
-  @keyframes blink {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0; }
-  }
+  /* Animations */
+  --animate-fade-up: fadeUp 0.5s ease-out forwards;
+  --animate-glow-pulse: glowPulse 3s ease-in-out infinite;
+  /* Background - Soft Dark dengan nuansa blur */
+  --bg-base: #0a0a0f;
+  --bg-surface: rgba(18, 18, 24, 0.85);
+  --bg-surface-solid: #121218;
+  --bg-elevated: rgba(28, 28, 36, 0.95);
+  --bg-overlay: rgba(0, 0, 0, 0.6);
   
-  @keyframes glow {
-    0%, 100% { text-shadow: 0 0 5px #00ff88, 0 0 10px #00ff88; }
-    50% { text-shadow: 0 0 15px #00ff88, 0 0 25px #00ff88; }
-  }
+  /* Glassmorphism */
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-highlight: rgba(255, 255, 255, 0.03);
+  
+  /* Neon Colors - Glow versions */
+  --neon-green-glow: rgba(16, 185, 129, 0.3);
+  --neon-blue-glow: rgba(59, 130, 246, 0.3);
+  --neon-purple-glow: rgba(139, 92, 246, 0.3);
+  --neon-yellow-glow: rgba(245, 158, 11, 0.3);
+  
+  /* Text Colors tambahan */
+  --text-disabled: #475569;
+  
+  /* Border */
+  --border-light: rgba(255, 255, 255, 0.06);
+  --border-medium: rgba(255, 255, 255, 0.1);
+  
+  /* Transitions */
+  --transition-fast: 150ms cubic-bezier(0.2, 0, 0, 1);
+  --transition-normal: 250ms cubic-bezier(0.2, 0, 0, 1);
+  --transition-slow: 400ms cubic-bezier(0.2, 0, 0, 1);
 }
 
-/* Global styles */
+/* Dark mode base */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
-body {
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
-  font-family: 'VT323', 'Courier New', monospace;
+html {
+  scroll-behavior: smooth;
 }
 
-/* Scanline Effect */
-.scanline-overlay::after {
-  content: "";
+body {
+  background: linear-gradient(
+    135deg,
+    #0a0a0f 0%,
+    #0f0f15 50%,
+    #0a0a0f 100%
+  );
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Soft gradient orbs di background */
+.bg-glow-orb {
   position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.bg-glow-orb::before {
+  content: '';
+  position: absolute;
+  top: -20%;
+  left: -10%;
+  width: 80%;
+  height: 80%;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.08) 0%, transparent 70%);
+  filter: blur(80px);
+}
+
+.bg-glow-orb::after {
+  content: '';
+  position: absolute;
+  bottom: -20%;
+  right: -10%;
+  width: 70%;
+  height: 70%;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.06) 0%, transparent 70%);
+  filter: blur(100px);
+}
+
+/* Glassmorphism Card */
+.glass-card {
+  background: var(--bg-surface);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.glass-card-solid {
+  background: var(--bg-surface-solid);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+}
+
+/* Modern Button */
+.btn-modern {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 500;
+  font-size: 14px;
+  padding: 10px 20px;
+  border-radius: var(--radius-md);
+  transition: var(--transition-fast);
+  cursor: pointer;
+  font-family: var(--font-sans);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--neon-green), #059669);
+  color: white;
+  border: none;
+  box-shadow: 0 2px 8px var(--neon-green-glow);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px var(--neon-green-glow);
+}
+
+.btn-secondary {
+  background: transparent;
+  border: 1px solid var(--border-medium);
+  color: var(--text-secondary);
+}
+
+.btn-secondary:hover {
+  border-color: var(--neon-blue);
+  color: var(--neon-blue);
+  background: rgba(59, 130, 246, 0.05);
+}
+
+/* Pixel Accent (for retro touch) */
+.pixel-accent {
+  font-family: var(--font-pixel);
+  letter-spacing: -0.5px;
+}
+
+.pixel-border {
+  border: 1px solid var(--neon-green);
+  box-shadow: 2px 2px 0px var(--neon-green);
+  border-radius: 0;
+}
+
+/* Scanline subtle (optional) */
+.scanline-subtle {
+  position: relative;
+  overflow: hidden;
+}
+
+.scanline-subtle::after {
+  content: '';
+  position: absolute;
   top: 0;
   left: 0;
   width: 100%;
@@ -73,96 +203,41 @@ body {
   background: repeating-linear-gradient(
     0deg,
     transparent,
-    transparent 2px,
-    rgba(0, 0, 0, 0.1) 2px,
-    rgba(0, 0, 0, 0.1) 4px
+    transparent 3px,
+    rgba(0, 0, 0, 0.03) 3px,
+    rgba(0, 0, 0, 0.03) 6px
   );
   pointer-events: none;
-  z-index: 9999;
 }
 
-/* Custom scrollbar */
+/* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--bg-panel);
-  border: 1px solid var(--border-primary);
+  background: var(--bg-surface-solid);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--neon-green);
-  border: 1px solid var(--bg-primary);
+  background: var(--text-muted);
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--neon-blue);
+  background: var(--neon-green);
 }
 
-/* Glow text utility */
-.glow-text {
-  text-shadow: 0 0 5px var(--neon-green), 0 0 10px var(--neon-green);
-}
-
-/* Pixel border utility */
-.pixel-border {
-  border: 2px solid var(--border-accent);
-  box-shadow: 4px 4px 0px rgba(0, 255, 136, 0.2);
-}
-
-/* Additional pixel effects for Step 2 */
-@keyframes pixel-blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
-}
-
-.animate-pixel-blink {
-  animation: pixel-blink 1s step-end infinite;
-}
-
-/* CRT flicker effect */
-@keyframes crt-flicker {
-  0% { opacity: 1; }
-  10% { opacity: 0.97; }
-  20% { opacity: 0.99; }
-  30% { opacity: 0.98; }
-  40% { opacity: 1; }
-  50% { opacity: 0.96; }
-  60% { opacity: 0.99; }
-  70% { opacity: 0.98; }
-  80% { opacity: 1; }
-  90% { opacity: 0.97; }
-  100% { opacity: 1; }
-}
-
-.crt-flicker {
-  animation: crt-flicker 8s infinite;
-}
-
-/* Pixelated border glow */
-.pixel-border-glow {
-  border: 2px solid var(--neon-green);
-  box-shadow: 
-    0 0 5px var(--neon-green),
-    inset 0 0 5px var(--neon-green);
-}
-
-/* Typewriter text effect */
-.typewriter {
-  overflow: hidden;
-  border-right: 2px solid var(--neon-green);
-  white-space: nowrap;
-  animation: typing 3.5s steps(40, end), blink-caret 0.75s step-end infinite;
-}
-
-@keyframes typing {
-  from { width: 0; }
-  to { width: 100%; }
-}
-
-@keyframes blink-caret {
-  from, to { border-color: transparent; }
-  50% { border-color: var(--neon-green); }
+/* Responsive */
+@media (max-width: 768px) {
+  :root {
+    --radius-lg: 16px;
+    --radius-md: 10px;
+  }
+  
+  .btn-modern {
+    padding: 8px 16px;
+    font-size: 13px;
+  }
 }
