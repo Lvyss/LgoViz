@@ -72,23 +72,23 @@ export default function InputModal({
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80">
       <div className="relative">
         {/* CRT flicker effect */}
-        <div className="absolute inset-0 bg-neon-green/5 pointer-events-none animate-pulse" />
+        <div className="absolute inset-0 pointer-events-none bg-neon-green/5 animate-pulse" />
         
         <PixelCard glow className="w-[90vw] max-w-md">
-          <div className="text-center mb-4">
+          <div className="mb-4 text-center">
             <div className="inline-block mb-2">
-              <span className="font-mono text-neon-green text-sm animate-pixel-blink">
+              <span className="font-mono text-sm text-neon-green animate-pixel-blink">
                 █ INPUT_REQUIRED █
               </span>
             </div>
-            <h3 className="font-pixel text-neon-blue text-sm mb-2">
+            <h3 className="mb-2 text-sm font-pixel text-neon-blue">
               Masukkan nilai untuk variabel
             </h3>
-            <div className="bg-pixel-dark border-2 border-neon-green/50 p-3 inline-block">
-              <code className="font-mono text-neon-green text-lg">
+            <div className="inline-block p-3 border-2 bg-pixel-dark border-neon-green/50">
+              <code className="font-mono text-lg text-neon-green">
                 {variableName}
               </code>
-              <span className="font-mono text-text-muted text-sm ml-2">
+              <span className="ml-2 font-mono text-sm text-text-muted">
                 ({variableType})
               </span>
             </div>
@@ -96,7 +96,7 @@ export default function InputModal({
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="font-mono text-text-secondary text-sm block mb-2">
+              <label className="block mb-2 font-mono text-sm text-text-secondary">
                 Nilai:
               </label>
               <input
@@ -104,7 +104,7 @@ export default function InputModal({
                 type={getInputType()}
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                className="w-full bg-pixel-dark border-2 border-neon-green/50 focus:border-neon-green outline-none px-4 py-3 font-mono text-text-primary text-center text-lg"
+                className="w-full px-4 py-3 font-mono text-lg text-center border-2 outline-none bg-pixel-dark border-neon-green/50 focus:border-neon-green text-text-primary"
                 placeholder={getPlaceholder()}
                 step={variableType === 'float' ? 'any' : '1'}
               />
@@ -130,7 +130,7 @@ export default function InputModal({
             </div>
           </form>
 
-          <p className="text-center font-mono text-text-muted text-xs mt-4">
+          <p className="mt-4 font-mono text-xs text-center text-text-muted">
             Tekan Enter untuk submit
           </p>
         </PixelCard>

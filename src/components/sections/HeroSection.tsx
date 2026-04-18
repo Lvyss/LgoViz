@@ -6,68 +6,108 @@ import { motion } from 'framer-motion'
 export default function HeroSection() {
   return (
     <section className="relative flex items-center justify-center min-h-[calc(100vh-64px)] overflow-hidden">
-      <div className="w-full px-4 sm:px-6 lg:px-8">
+      {/* Background Bar Charts */}
+      <div className="absolute inset-0 overflow-hidden">
+        {/* Left side bars - Algoritma */}
+        <div className="absolute left-0 bottom-0 flex items-end gap-1 translate-y-8">
+          <div className="w-6 h-24 bg-emerald-500/20 rounded-t-sm" />
+          <div className="w-6 h-32 bg-emerald-500/25 rounded-t-sm" />
+          <div className="w-6 h-20 bg-emerald-500/15 rounded-t-sm" />
+          <div className="w-6 h-40 bg-emerald-500/30 rounded-t-sm" />
+          <div className="w-6 h-28 bg-emerald-500/20 rounded-t-sm" />
+          <div className="w-6 h-36 bg-emerald-500/35 rounded-t-sm" />
+          <div className="w-6 h-44 bg-emerald-500/40 rounded-t-sm" />
+          <div className="w-6 h-32 bg-emerald-500/25 rounded-t-sm" />
+        </div>
+        <div className="absolute left-4 bottom-2 text-[10px] font-mono text-emerald-500/60 tracking-widest">
+          ALGORITMA
+        </div>
+
+        {/* Right side bars - Logika */}
+        <div className="absolute right-0 bottom-0 flex items-end gap-1 translate-y-8">
+          <div className="w-6 h-36 bg-blue-500/35 rounded-t-sm" />
+          <div className="w-6 h-28 bg-blue-500/25 rounded-t-sm" />
+          <div className="w-6 h-44 bg-blue-500/40 rounded-t-sm" />
+          <div className="w-6 h-32 bg-blue-500/30 rounded-t-sm" />
+          <div className="w-6 h-40 bg-blue-500/35 rounded-t-sm" />
+          <div className="w-6 h-24 bg-blue-500/20 rounded-t-sm" />
+          <div className="w-6 h-32 bg-blue-500/25 rounded-t-sm" />
+          <div className="w-6 h-20 bg-blue-500/15 rounded-t-sm" />
+        </div>
+        <div className="absolute right-4 bottom-2 text-[10px] font-mono text-blue-500/60 tracking-widest">
+          LOGIKA
+        </div>
+
+        {/* Center glow */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-emerald-500/5 rounded-full blur-3xl" />
+      </div>
+
+      {/* Content */}
+      <div className="w-full px-4 sm:px-6 lg:px-8 relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
+          transition={{ duration: 0.6 }}
           className="space-y-6 max-w-4xl mx-auto text-center"
         >
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-xs font-medium text-emerald-400">
-              Interactive Learning Platform
-            </span>
-          </div>
+          {/* Logo Badge */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="inline-flex items-center justify-center"
+          >
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-emerald-400 to-blue-500 blur-xl opacity-30 rounded-full" />
+              <h1 className="relative text-5xl sm:text-6xl lg:text-7xl font-black tracking-tight bg-gradient-to-r from-emerald-400 via-white to-blue-500 bg-clip-text text-transparent drop-shadow-lg">
+                LGOVIZ
+              </h1>
+            </div>
+          </motion.div>
 
-          {/* Title */}
-          <h1 className="text-white text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight">
-            Visualisasi Algoritma
-            <br />
-            <span className="bg-gradient-to-r from-emerald-400 to-blue-500 bg-clip-text text-transparent">
-              C++ Langkah demi Langkah
-            </span>
-          </h1>
+          {/* Subtitle */}
+          <motion.p
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="text-xl sm:text-2xl lg:text-3xl font-medium text-gray-300 tracking-wide"
+          >
+            Visualisasi Logika & Algoritma
+          </motion.p>
 
-          {/* Description */}
-          <p className="text-base sm:text-lg text-gray-400 max-w-2xl mx-auto">
-            Platform belajar algoritma yang interaktif untuk siswa SMK RPL.
-            Lihat eksekusi kode secara real-time dan pahami setiap perubahan variabel.
-          </p>
+          {/* Tagline */}
+          <motion.p
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="text-sm sm:text-base text-gray-500 tracking-widest uppercase"
+          >
+            Jelajahi, Pahami, Kuasai
+          </motion.p>
 
           {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.4 }}
+            className="flex flex-col sm:flex-row gap-4 justify-center pt-6"
+          >
             <Link
               href="/auth/register"
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-medium rounded-lg hover:shadow-lg hover:shadow-emerald-500/25 transition-all"
+              className="inline-flex items-center justify-center gap-2 px-8 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold rounded-lg hover:shadow-lg hover:shadow-emerald-500/30 hover:scale-105 transition-all duration-300"
             >
               Mulai Belajar Gratis
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </Link>
             <Link
-              href="/dashboard"
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white/5 border border-white/10 text-white font-medium rounded-lg hover:bg-white/10 transition-all"
+              href="/modules"
+              className="inline-flex items-center justify-center gap-2 px-8 py-3 bg-white/5 border border-white/20 text-white font-semibold rounded-lg hover:bg-white/10 hover:scale-105 transition-all duration-300"
             >
               Lihat Modul
             </Link>
-          </div>
-
-          {/* Stats */}
-          <div className="flex flex-wrap justify-center gap-8 pt-12">
-            {[
-              { value: '15+', label: 'Topik Materi' },
-              { value: '3', label: 'Modul Utama' },
-              { value: '100%', label: 'Gratis Selamanya' },
-            ].map((stat, idx) => (
-              <div key={idx} className="text-center">
-                <div className="text-2xl font-bold text-white">{stat.value}</div>
-                <div className="text-sm text-gray-500">{stat.label}</div>
-              </div>
-            ))}
-          </div>
+          </motion.div>
         </motion.div>
       </div>
     </section>

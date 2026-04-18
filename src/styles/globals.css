@@ -240,4 +240,45 @@ body {
     padding: 8px 16px;
     font-size: 13px;
   }
+
+  /* Di bagian bawah globals.css, tambahkan: */
+
+/* Monaco Editor Custom Highlight Styles */
+.highlighted-line {
+  background-color: rgba(16, 185, 129, 0.2) !important;
+  border-left: 4px solid #10b981 !important;
+}
+
+.highlighted-line-glyph {
+  background-color: #10b981 !important;
+  width: 6px !important;
+  margin-left: 3px;
+  border-radius: 0px !important;
+}
+
+.highlighted-line-border {
+  background-color: #10b981 !important;
+  width: 4px !important;
+  margin-left: 0px;
+}
+
+/* Animasi untuk variable yang berubah */
+@keyframes variableFlash {
+  0% {
+    background-color: rgba(16, 185, 129, 0);
+    border-left-color: transparent;
+  }
+  30% {
+    background-color: rgba(16, 185, 129, 0.25);
+    border-left-color: #10b981;
+  }
+  100% {
+    background-color: rgba(16, 185, 129, 0);
+    border-left-color: transparent;
+  }
+}
+
+.variable-changed {
+  animation: variableFlash 0.4s cubic-bezier(0.2, 0, 0, 1);
+}
 }

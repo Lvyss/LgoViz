@@ -1,11 +1,9 @@
-// Main entry point for interpreter engine
+// lib/interpreter/index.ts
 
-export { evaluateCode } from './evaluator'
-export { RuntimeEnvironment } from './environment'
-export { parseCode, parseExpression } from './parser'
-export type { 
-  ExecutionStep, 
-  ExecutionTrace, 
-  Variable,
-  Environment 
-} from './types'
+export type { ExecutionStep, ExecutionTrace, EvaluateOptions } from './core/types'
+
+// Export evaluator percabangan sebagai default untuk sementara
+export { evaluatePercabangan } from './evaluators/percabangan'
+
+// Untuk tipe evaluator
+export type EvaluatorType = 'percabangan' | 'perulangan' | 'struktur-data'

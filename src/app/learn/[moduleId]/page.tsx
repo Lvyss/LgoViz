@@ -5,9 +5,9 @@ import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { getModuleById } from '@/data/modules'
 import { useInterpreter } from '@/hooks/useInterpreter'
+import CodeEditorPanel from '@/components/learn/CodeEditorPanel'
 import InputModal from '@/components/visualizer/InputModal'
 
-// Warna modern
 const colorStyles = {
   emerald: {
     text: 'text-emerald-400',
@@ -15,6 +15,8 @@ const colorStyles = {
     bg: 'bg-emerald-500/10',
     button: 'bg-gradient-to-r from-emerald-500 to-emerald-600',
     badge: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
+    progress: 'bg-emerald-500',
+    glow: 'shadow-[0_0_20px_rgba(16,185,129,0.3)]',
   },
   blue: {
     text: 'text-blue-400',
@@ -22,6 +24,8 @@ const colorStyles = {
     bg: 'bg-blue-500/10',
     button: 'bg-gradient-to-r from-blue-500 to-blue-600',
     badge: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+    progress: 'bg-blue-500',
+    glow: 'shadow-[0_0_20px_rgba(59,130,246,0.3)]',
   },
   purple: {
     text: 'text-purple-400',
@@ -29,6 +33,8 @@ const colorStyles = {
     bg: 'bg-purple-500/10',
     button: 'bg-gradient-to-r from-purple-500 to-purple-600',
     badge: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+    progress: 'bg-purple-500',
+    glow: 'shadow-[0_0_20px_rgba(168,85,247,0.3)]',
   },
 }
 
@@ -36,7 +42,7 @@ export default function LearnPage() {
   const params = useParams()
   const moduleId = params.moduleId as string
   const module = getModuleById(moduleId)
-  
+
   const [selectedTopicId, setSelectedTopicId] = useState<string>(
     module?.topics[0]?.id || ''
   )
@@ -45,15 +51,15 @@ export default function LearnPage() {
   const selectedTopic = module?.topics.find(t => t.id === selectedTopicId)
   const selectedTopicIndex = module?.topics.findIndex(t => t.id === selectedTopicId) || 0
 
-  // Interpreter hook
   const {
+    isRunning,
+    error,
     runCode,
+    reset,
     currentStep,
     totalSteps,
-    isRunning,
     isPlaying,
     speed,
-    error,
     nextStep,
     prevStep,
     firstStep,
@@ -61,48 +67,53 @@ export default function LearnPage() {
     play,
     pause,
     setSpeed,
-    getCurrentVariables,
-    getCurrentOutput,
-    getCurrentExplanation,
-    getCurrentLine,
     waitingForInput,
     inputVariable,
     inputType,
     submitInput,
     cancelInput,
+    getCurrentLine,
+    getCurrentVariables,
+    getCurrentOutput,
+    getCurrentExplanation,
+    trace,
   } = useInterpreter()
 
-  // Update current code when topic changes
   useEffect(() => {
     if (selectedTopic) {
       setCurrentCode(selectedTopic.starterCode)
+      reset()
     }
-  }, [selectedTopic])
+  }, [selectedTopic, reset])
 
-  const handleRunCode = (code: string) => {
-    runCode(code)
-  }
+// Di page.tsx, update handleRunCode:
+const handleRunCode = async (code: string) => {
+  const evaluatorType = moduleId === 'percabangan' ? 'percabangan' 
+    : moduleId === 'perulangan' ? 'perulangan' 
+    : 'struktur-data'
+  await runCode(code, evaluatorType)
+}
 
   const currentVariables = getCurrentVariables()
   const currentOutput = getCurrentOutput()
   const currentExplanation = getCurrentExplanation()
+  const currentLine = getCurrentLine()
 
-  // Tentukan warna berdasarkan moduleId
-  const moduleColor = moduleId === 'percabangan' ? 'emerald' 
-    : moduleId === 'perulangan' ? 'blue' 
+  const moduleColor = moduleId === 'percabangan' ? 'emerald'
+    : moduleId === 'perulangan' ? 'blue'
     : 'purple'
   const colors = colorStyles[moduleColor]
 
   if (!module) {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+      <div className="px-4 py-20 mx-auto max-w-7xl sm:px-6 lg:px-8">
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-gray-400 mb-4">404</h1>
-            <p className="text-gray-500 mb-6">Module "{moduleId}" not found</p>
+            <h1 className="mb-4 text-2xl font-bold text-gray-400">404</h1>
+            <p className="mb-6 text-gray-500">Module &quot;{moduleId}&quot; not found</p>
             <Link
               href="/dashboard"
-              className="inline-flex px-6 py-3 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 transition-colors"
+              className="inline-flex px-6 py-3 transition-colors border rounded-lg bg-white/5 border-white/10 hover:bg-white/10"
             >
               Back to Dashboard
             </Link>
@@ -127,7 +138,7 @@ export default function LearnPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+    <div className="px-4 py-20 mx-auto max-w-7xl sm:px-6 lg:px-8">
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
@@ -138,17 +149,17 @@ export default function LearnPage() {
         <h1 className={`text-3xl font-bold tracking-tight ${colors.text}`}>
           {module.title}
         </h1>
-        <p className="text-gray-400 mt-1">
+        <p className="mt-1 text-gray-400">
           {module.description}
         </p>
       </div>
 
-      {/* Split Layout: Sidebar + Content */}
-      <div className="grid lg:grid-cols-4 gap-6">
-        {/* Sidebar - Topic List */}
+      {/* Split Layout */}
+      <div className="grid gap-6 lg:grid-cols-4">
+        {/* Sidebar */}
         <div className="lg:col-span-1">
           <div className="sticky top-20">
-            <h3 className="text-sm font-medium text-gray-400 mb-3">Topics</h3>
+            <h3 className="mb-3 text-sm font-medium text-gray-400">Topics</h3>
             <div className="space-y-1">
               {module.topics.map((topic, idx) => (
                 <button
@@ -175,11 +186,11 @@ export default function LearnPage() {
         </div>
 
         {/* Main Content */}
-        <div className="lg:col-span-3 space-y-6">
+        <div className="space-y-6 lg:col-span-3">
           {/* Material Panel */}
           {selectedTopic && (
-            <div className="p-6 rounded-xl bg-white/5 border border-white/10">
-              <div className="flex justify-between items-start mb-4">
+            <div className="p-6 border rounded-xl bg-white/5 border-white/10">
+              <div className="flex items-start justify-between mb-4">
                 <h2 className={`text-xl font-semibold ${colors.text}`}>
                   {selectedTopic.title}
                 </h2>
@@ -187,68 +198,37 @@ export default function LearnPage() {
                   Topic {selectedTopicIndex + 1} of {module.topics.length}
                 </span>
               </div>
-              <div className="prose prose-invert max-w-none">
-                <p className="text-gray-300 leading-relaxed">
-                  {selectedTopic.description}
-                </p>
-                <div className="mt-4 text-gray-400 text-sm space-y-2">
-                  {selectedTopic.learningObjectives?.map((obj, idx) => (
-                    <div key={idx} className="flex items-start gap-2">
-                      <span className={colors.text}>▸</span>
-                      <span>{obj}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Code Editor Panel */}
-          {selectedTopic && (
-            <div className="rounded-xl bg-[#1e1e2e] border border-white/10 overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-3 bg-white/5 border-b border-white/10">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-red-500" />
-                  <div className="w-3 h-3 rounded-full bg-yellow-500" />
-                  <div className="w-3 h-3 rounded-full bg-green-500" />
-                  <span className="text-xs text-gray-400 ml-2">main.cpp</span>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setCurrentCode(selectedTopic.starterCode)}
-                    className="text-xs px-2 py-1 rounded bg-white/5 hover:bg-white/10 transition-colors"
-                  >
-                    Reset
-                  </button>
-                  <button
-                    onClick={() => handleRunCode(currentCode)}
-                    className={`text-xs px-3 py-1 rounded ${colors.button} text-white transition-all hover:shadow-lg`}
-                  >
-                    ▶ Run
-                  </button>
-                </div>
-              </div>
-              <textarea
-                value={currentCode}
-                onChange={(e) => setCurrentCode(e.target.value)}
-                className="w-full h-64 p-4 font-mono text-sm text-gray-300 bg-[#1e1e2e] focus:outline-none resize-none"
-                spellCheck={false}
+              <div
+                className="leading-relaxed prose text-gray-300 prose-invert max-w-none"
+                dangerouslySetInnerHTML={{ __html: selectedTopic.explanation }}
               />
             </div>
           )}
 
-          {/* Error Display */}
+          {/* Code Editor with Highlighting */}
+          {selectedTopic && (
+            <CodeEditorPanel
+              starterCode={selectedTopic.starterCode}
+              solutionCode={selectedTopic.solutionCode}
+              onCodeChange={setCurrentCode}
+              onRun={handleRunCode}
+              isRunning={isRunning}
+              highlightedLine={currentLine}
+            />
+          )}
+
+          {/* Error */}
           {error && (
-            <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20">
-              <h3 className="text-red-400 font-semibold text-sm mb-1">⚠️ Error</h3>
-              <p className="text-red-300 text-sm">{error}</p>
+            <div className="p-4 border rounded-xl bg-red-500/10 border-red-500/20">
+              <h3 className="mb-1 text-sm font-semibold text-red-400">⚠️ Error</h3>
+              <p className="text-sm text-red-300">{error}</p>
             </div>
           )}
 
-          {/* Visualizer */}
-          <div className="rounded-xl bg-white/5 border border-white/10 overflow-hidden">
-            <div className="px-4 py-3 bg-white/5 border-b border-white/10">
-              <div className="flex justify-between items-center">
+          {/* Visualizer Panel */}
+          <div className="overflow-hidden border rounded-xl bg-white/5 border-white/10">
+            <div className="px-4 py-3 border-b bg-white/5 border-white/10">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <h3 className={`text-sm font-semibold ${colors.text}`}>
                   🎮 Visualizer
                 </h3>
@@ -258,12 +238,8 @@ export default function LearnPage() {
                       Step {currentStep} / {totalSteps}
                     </span>
                     <div className="w-24 h-1.5 bg-white/10 rounded-full overflow-hidden">
-                      <div 
-                        className={`h-full rounded-full ${
-                          moduleColor === 'emerald' ? 'bg-emerald-500' 
-                          : moduleColor === 'blue' ? 'bg-blue-500' 
-                          : 'bg-purple-500'
-                        }`}
+                      <div
+                        className={`h-full rounded-full ${colors.progress} transition-all duration-200`}
                         style={{ width: `${(currentStep / totalSteps) * 100}%` }}
                       />
                     </div>
@@ -274,50 +250,64 @@ export default function LearnPage() {
 
             <div className="p-4">
               {/* Animation Controls */}
-              <div className="flex justify-center gap-2 mb-6">
+              <div className="flex flex-wrap justify-center gap-2 mb-6">
                 <button
                   onClick={firstStep}
-                  disabled={!isRunning || currentStep <= 1}
-                  className="px-3 py-1.5 rounded bg-white/5 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  disabled={totalSteps === 0 || currentStep <= 0}
+                  className="px-3 py-1.5 rounded bg-white/5 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-lg"
+                  title="First step"
                 >
                   ⏮
                 </button>
                 <button
                   onClick={prevStep}
-                  disabled={!isRunning || currentStep <= 1}
-                  className="px-3 py-1.5 rounded bg-white/5 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  disabled={totalSteps === 0 || currentStep <= 0}
+                  className="px-3 py-1.5 rounded bg-white/5 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-lg"
+                  title="Previous step"
                 >
                   ◀
                 </button>
                 {isPlaying ? (
                   <button
                     onClick={pause}
-                    className="px-3 py-1.5 rounded bg-white/5 hover:bg-white/10 transition-colors"
+                    className="px-4 py-1.5 rounded bg-white/10 hover:bg-white/20 transition-colors text-lg"
+                    title="Pause"
                   >
                     ⏸
                   </button>
                 ) : (
                   <button
                     onClick={play}
-                    disabled={!isRunning || currentStep >= totalSteps}
-                    className="px-3 py-1.5 rounded bg-white/5 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    disabled={totalSteps === 0 || currentStep >= totalSteps}
+                    className={`px-4 py-1.5 rounded ${colors.button} ${colors.glow} text-white transition-all text-lg disabled:opacity-50 disabled:cursor-not-allowed`}
+                    title="Play"
                   >
                     ▶
                   </button>
                 )}
                 <button
                   onClick={nextStep}
-                  disabled={!isRunning || currentStep >= totalSteps}
-                  className="px-3 py-1.5 rounded bg-white/5 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  disabled={totalSteps === 0 || currentStep >= totalSteps}
+                  className="px-3 py-1.5 rounded bg-white/5 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-lg"
+                  title="Next step"
                 >
                   ▶▶
                 </button>
                 <button
                   onClick={lastStep}
-                  disabled={!isRunning || currentStep >= totalSteps}
-                  className="px-3 py-1.5 rounded bg-white/5 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  disabled={totalSteps === 0 || currentStep >= totalSteps}
+                  className="px-3 py-1.5 rounded bg-white/5 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-lg"
+                  title="Last step"
                 >
                   ⏭
+                </button>
+                <button
+                  onClick={reset}
+                  disabled={totalSteps === 0}
+                  className="px-3 py-1.5 rounded bg-white/5 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-lg"
+                  title="Reset"
+                >
+                  ↺
                 </button>
               </div>
 
@@ -334,31 +324,29 @@ export default function LearnPage() {
                   className="w-48 h-1 rounded-full bg-white/10 appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-emerald-500"
                 />
                 <span className="text-xs text-gray-400">
-                  {speed === 100 ? 'Fast' : speed === 2000 ? 'Slow' : `${Math.round(1000 / speed)}x`}
+                  {speed <= 200 ? 'Fast' : speed >= 1500 ? 'Slow' : `${Math.round(1000 / speed)}x`}
                 </span>
               </div>
 
               {/* Variables & Output */}
-              <div className="grid md:grid-cols-2 gap-4">
+              <div className="grid gap-4 md:grid-cols-2">
                 {/* Variables Panel */}
-                <div className="p-3 rounded-lg bg-black/30 border border-white/10">
+                <div className="p-3 border rounded-lg bg-black/30 border-white/10">
                   <p className={`text-xs font-semibold mb-2 ${colors.text}`}>📊 Variables</p>
-                  {currentVariables.length === 0 ? (
-                    <p className="text-xs text-gray-500 text-center py-4">
-                      No variables yet
+                  {Object.keys(currentVariables).length === 0 ? (
+                    <p className="py-4 text-xs text-center text-gray-500">
+                      {totalSteps === 0 ? 'Run code to see variables' : 'No variables'}
                     </p>
                   ) : (
-                    <div className="space-y-1 max-h-48 overflow-auto">
-                      {currentVariables.map((v, idx) => (
-                        <div 
+                    <div className="space-y-1 overflow-auto max-h-48">
+                      {Object.entries(currentVariables).map(([name, value], idx) => (
+                        <div
                           key={idx}
-                          className={`text-sm flex justify-between items-center py-1 px-2 rounded ${
-                            v.changed ? `${colors.bg} ${colors.border} border` : ''
-                          }`}
+                          className="flex items-center justify-between px-2 py-1 text-sm rounded bg-white/5"
                         >
-                          <span className="text-gray-300">{v.name}</span>
-                          <span className={colors.text}>
-                            {v.type === 'string' ? `"${v.value}"` : String(v.value)}
+                          <span className="font-mono text-gray-300">{name}</span>
+                          <span className={`${colors.text} font-mono`}>
+                            {typeof value === 'string' ? `"${value}"` : String(value)}
                           </span>
                         </div>
                       ))}
@@ -367,31 +355,52 @@ export default function LearnPage() {
                 </div>
 
                 {/* Output Panel */}
-                <div className="p-3 rounded-lg bg-black/30 border border-white/10">
+                <div className="p-3 border rounded-lg bg-black/30 border-white/10">
                   <p className={`text-xs font-semibold mb-2 ${colors.text}`}>💬 Output</p>
-                  {currentOutput.length === 0 ? (
-                    <p className="text-xs text-gray-500 text-center py-4">
-                      Run code to see output
+                  {!currentOutput ? (
+                    <p className="py-4 text-xs text-center text-gray-500">
+                      {totalSteps === 0 ? 'Run code to see output' : 'No output yet'}
                     </p>
                   ) : (
-                    <div className="space-y-1 max-h-48 overflow-auto">
-                      {currentOutput.map((line, idx) => (
-                        <div key={idx} className="text-sm text-gray-300 border-l-2 border-emerald-500/30 pl-2">
-                          {line}
-                        </div>
-                      ))}
+                    <div className="overflow-auto max-h-48">
+                      <pre className="font-mono text-sm whitespace-pre-wrap text-emerald-400">
+                        {currentOutput}
+                      </pre>
                     </div>
                   )}
                 </div>
               </div>
 
               {/* Explanation Panel */}
-              <div className="mt-4 p-3 rounded-lg bg-black/30 border border-white/10">
+              <div className="p-3 mt-4 border rounded-lg bg-black/30 border-white/10">
                 <p className={`text-xs font-semibold mb-2 ${colors.text}`}>📖 Explanation</p>
-                <p className="text-sm text-gray-400">
-                  {currentExplanation || 'Press RUN to start execution'}
+                <p className="text-sm text-gray-300">
+                  {currentExplanation || 'Press ▶ PLAY or step through to see explanation'}
                 </p>
               </div>
+
+              {/* All Steps Trace (Debug - hide in production) */}
+              {trace && trace.steps.length > 0 && (
+                <div className="p-3 mt-4 border rounded-lg bg-black/30 border-white/10">
+                  <p className={`text-xs font-semibold mb-2 ${colors.text}`}>📋 Trace ({trace.steps.length} steps)</p>
+                  <div className="space-y-1 overflow-auto max-h-40">
+                    {trace.steps.map((step, idx) => (
+                      <div
+                        key={idx}
+                        className={`text-xs font-mono px-2 py-1 rounded ${
+                          idx + 1 === currentStep
+                            ? 'bg-emerald-500/20 text-emerald-400'
+                            : 'text-gray-500'
+                        }`}
+                      >
+                        <span className="text-gray-600">#{idx + 1}</span>{' '}
+                        <span className="text-gray-400">L{step.lineNumber}</span>{' '}
+                        {step.explanation}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -400,7 +409,7 @@ export default function LearnPage() {
             <button
               onClick={handlePrevTopic}
               disabled={selectedTopicIndex === 0}
-              className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-4 py-2 transition-colors border rounded-lg bg-white/5 border-white/10 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               ← Previous
             </button>
