@@ -1,4 +1,4 @@
-// lib/interpreter/evaluators/percabangan.ts - FINAL: NESTED IF + ELSE IF CHAIN
+// lib/interpreter/evaluators/percabangan.ts - FINAL: NESTED IF + ELSE IF + SWITCH CASE
 
 import { ExecutionTrace, EvaluateOptions } from '../core/types'
 
@@ -182,17 +182,12 @@ export async function evaluatePercabangan(
   recordStep(mainStartLineNum, '🚀 Memulai program main()')
 
   // ============ STATE MACHINE ============
-  // Konsep kunci:
-  // - Setiap { push state ke stack, setiap } pop state dari stack
-  // - } else if / } else : pop → eval → push
-  // - ifPendingElse & ifBranchSelected di stack menyimpan hasil IF
-  //   supaya } else if / } else berikutnya bisa membaca hasilnya
   interface BlockState {
     parentSkipMode: boolean
     parentPendingElse: boolean
     parentBranchSelected: boolean
-    ifPendingElse: boolean      // hasil IF di level ini: masih nunggu else?
-    ifBranchSelected: boolean   // hasil IF di level ini: sudah ada yang true?
+    ifPendingElse: boolean
+    ifBranchSelected: boolean
   }
 
   const stateStack: BlockState[] = []
@@ -200,7 +195,12 @@ export async function evaluatePercabangan(
   let currentPendingElse = false
   let currentBranchSelected = false
 
-  // Helper: push block baru, warisi skipMode dari parent
+  // ── Switch state ──────────────────────────────────────────────
+  let inSwitch = false
+  let switchValue: any = null
+  let switchMatched = false
+  let switchDone = false
+
   const pushBlock = (
     skipMode = currentSkipMode,
     pendingElse = currentPendingElse,
@@ -215,10 +215,8 @@ export async function evaluatePercabangan(
     })
     currentPendingElse = false
     currentBranchSelected = false
-    // currentSkipMode TIDAK direset — diwarisi
   }
 
-  // Helper: update ifPendingElse & ifBranchSelected di top of stack
   const updateStackIfState = () => {
     if (stateStack.length > 0) {
       stateStack[stateStack.length - 1].ifPendingElse = currentPendingElse
@@ -226,52 +224,49 @@ export async function evaluatePercabangan(
     }
   }
 
-  // Helper: handle } else if / } else — pop lalu eval lalu push
-const handleCloseThenBranch = (lineNum: number, isElseIf: boolean, condition?: string): boolean => {
-  if (stateStack.length === 0) return false
+  const handleCloseThenBranch = (lineNum: number, isElseIf: boolean, condition?: string): boolean => {
+    if (stateStack.length === 0) return false
 
-  const prev = stateStack.pop()!
-  const parentSkipMode = prev.parentSkipMode
-  const savedPendingElse = prev.ifPendingElse
-  const savedBranchSelected = prev.ifBranchSelected
+    const prev = stateStack.pop()!
+    const parentSkipMode = prev.parentSkipMode
+    const savedPendingElse = prev.ifPendingElse
+    const savedBranchSelected = prev.ifBranchSelected
 
-  // Restore parent state
-  currentSkipMode = prev.parentSkipMode
-  currentPendingElse = prev.parentPendingElse
-  currentBranchSelected = prev.parentBranchSelected
+    currentSkipMode = prev.parentSkipMode
+    currentPendingElse = prev.parentPendingElse
+    currentBranchSelected = prev.parentBranchSelected
 
-  if (parentSkipMode) {
-    currentSkipMode = true
-    currentBranchSelected = false
-    currentPendingElse = false
-  } else if (savedBranchSelected) {
-    currentSkipMode = true
-    currentBranchSelected = true
-    currentPendingElse = false
-  } else if (savedPendingElse) {
-    if (isElseIf && condition !== undefined) {
-      const condResult = evalCondition(condition)
-      console.log(`    Condition: "${condition}" → ${condResult ? 'TRUE ✅' : 'FALSE ❌'}`)
-      recordStep(lineNum, `🔀 ELSE IF: "${condition}" → ${condResult ? '✅ TRUE' : '❌ FALSE'}`)
-      if (condResult) {
+    if (parentSkipMode) {
+      currentSkipMode = true
+      currentBranchSelected = false
+      currentPendingElse = false
+    } else if (savedBranchSelected) {
+      currentSkipMode = true
+      currentBranchSelected = true
+      currentPendingElse = false
+    } else if (savedPendingElse) {
+      if (isElseIf && condition !== undefined) {
+        const condResult = evalCondition(condition)
+        console.log(`    Condition: "${condition}" → ${condResult ? 'TRUE ✅' : 'FALSE ❌'}`)
+        recordStep(lineNum, `🔀 ELSE IF: "${condition}" → ${condResult ? '✅ TRUE' : '❌ FALSE'}`)
+        if (condResult) {
+          currentSkipMode = false
+          currentBranchSelected = true
+          currentPendingElse = false
+        } else {
+          currentSkipMode = true
+          currentBranchSelected = false
+          currentPendingElse = true
+        }
+      } else {
         currentSkipMode = false
         currentBranchSelected = true
         currentPendingElse = false
-      } else {
-        currentSkipMode = true
-        currentBranchSelected = false
-        currentPendingElse = true
       }
-    } else {
-      currentSkipMode = false
-      currentBranchSelected = true
-      currentPendingElse = false
     }
-  }
 
-  // Return parentSkipMode supaya caller bisa pakai untuk push berikutnya
-  return parentSkipMode
-}
+    return parentSkipMode
+  }
 
   let idx = 0
 
@@ -290,7 +285,7 @@ const handleCloseThenBranch = (lineNum: number, isElseIf: boolean, condition?: s
       idx++; continue
     }
 
-// ── 2. CLOSE BRACE standalone ─────────────────────────────────
+    // ── 2. CLOSE BRACE standalone ─────────────────────────────────
     if (line === '}') {
       console.log(`  → CLOSE BRACE: popBlock`)
       if (stateStack.length > 0) {
@@ -299,61 +294,136 @@ const handleCloseThenBranch = (lineNum: number, isElseIf: boolean, condition?: s
         currentPendingElse = prev.parentPendingElse
         currentBranchSelected = prev.parentBranchSelected
       }
+      // Reset switch state saat keluar dari switch block
+      if (inSwitch) {
+        console.log(`  → Exiting SWITCH block`)
+        inSwitch = false
+        switchValue = null
+        switchMatched = false
+        switchDone = false
+        currentSkipMode = false
+      }
       idx++; continue
     }
 
-const closeElseIfMatch = line.match(/^\}\s*else\s+if\s*\((.+)\)\s*\{?$/)
-if (closeElseIfMatch) {
-  console.log(`  → TYPE: } ELSE IF {`)
-  const condition = closeElseIfMatch[1].trim()
-  const parentSkipMode = handleCloseThenBranch(lineNum, true, condition)
+    // ── 3. "} else if (...) {" ────────────────────────────────────
+    const closeElseIfMatch = line.match(/^\}\s*else\s+if\s*\((.+)\)\s*\{?$/)
+    if (closeElseIfMatch) {
+      console.log(`  → TYPE: } ELSE IF {`)
+      const condition = closeElseIfMatch[1].trim()
+      const parentSkipMode = handleCloseThenBranch(lineNum, true, condition)
 
-  const branchSelectedNow = currentBranchSelected
-  const pendingElseNow = currentPendingElse
+      const branchSelectedNow = currentBranchSelected
+      const pendingElseNow = currentPendingElse
 
-  if (line.includes('{')) {
-    stateStack.push({
-      parentSkipMode: parentSkipMode,  // ← pakai parentSkipMode dari sebelum chain
-      parentPendingElse: false,
-      parentBranchSelected: false,
-      ifPendingElse: pendingElseNow,
-      ifBranchSelected: branchSelectedNow,
-    })
-    currentPendingElse = false
-    currentBranchSelected = false
-  }
+      if (line.includes('{')) {
+        stateStack.push({
+          parentSkipMode: parentSkipMode,
+          parentPendingElse: false,
+          parentBranchSelected: false,
+          ifPendingElse: pendingElseNow,
+          ifBranchSelected: branchSelectedNow,
+        })
+        currentPendingElse = false
+        currentBranchSelected = false
+      }
 
-  idx++; continue
-}
+      idx++; continue
+    }
 
-// ── 4. "} else {" ────────────────────────────────────────────
-if (line.match(/^\}\s*else(\s*\{.*)?$/)) {
-  console.log(`  → TYPE: } ELSE {`)
-  const parentSkipMode = handleCloseThenBranch(lineNum, false)
+    // ── 4. "} else {" atau "} else" ───────────────────────────────
+    if (line.match(/^\}\s*else(\s*\{.*)?$/)) {
+      console.log(`  → TYPE: } ELSE {`)
+      const parentSkipMode = handleCloseThenBranch(lineNum, false)
 
-  const branchSelectedNow = currentBranchSelected
-  const pendingElseNow = currentPendingElse
+      const branchSelectedNow = currentBranchSelected
+      const pendingElseNow = currentPendingElse
 
-  if (line.includes('{')) {
-    stateStack.push({
-      parentSkipMode: parentSkipMode,  // ← sama
-      parentPendingElse: false,
-      parentBranchSelected: false,
-      ifPendingElse: pendingElseNow,
-      ifBranchSelected: branchSelectedNow,
-    })
-    currentPendingElse = false
-    currentBranchSelected = false
-  }
+      if (line.includes('{')) {
+        stateStack.push({
+          parentSkipMode: parentSkipMode,
+          parentPendingElse: false,
+          parentBranchSelected: false,
+          ifPendingElse: pendingElseNow,
+          ifBranchSelected: branchSelectedNow,
+        })
+        currentPendingElse = false
+        currentBranchSelected = false
+      }
 
-  idx++; continue
-}
-    // ── 5. IF ─────────────────────────────────────────────────────
+      idx++; continue
+    }
+
+    // ── 5. SWITCH ─────────────────────────────────────────────────
+    const switchMatch = line.match(/^switch\s*\((.+)\)\s*\{?$/)
+    if (switchMatch) {
+      const varName = switchMatch[1].trim()
+      switchValue = getVar(varName) ?? evalExpr(varName)
+      inSwitch = true
+      switchMatched = false
+      switchDone = false
+      currentSkipMode = false
+      console.log(`  → TYPE: SWITCH, value=${switchValue}`)
+      recordStep(lineNum, `🔀 SWITCH: memeriksa nilai "${varName}" = ${switchValue}`)
+      if (line.includes('{')) pushBlock()
+      idx++; continue
+    }
+
+    // ── 6. CASE ───────────────────────────────────────────────────
+    const caseMatch = line.match(/^case\s+(.+?)\s*:$/)
+    if (caseMatch && inSwitch) {
+      if (switchDone) {
+        currentSkipMode = true
+        console.log(`  → TYPE: CASE (skip - switch done)`)
+      } else {
+        const caseValue = evalExpr(caseMatch[1].trim())
+        const matched = caseValue == switchValue
+        console.log(`  → TYPE: CASE ${caseValue} == ${switchValue} → ${matched ? 'MATCH ✅' : 'NO MATCH ❌'}`)
+        if (matched) {
+          switchMatched = true
+          currentSkipMode = false
+          recordStep(lineNum, `✅ CASE ${caseValue}: cocok`)
+        } else if (switchMatched) {
+          // fall-through: tetap execute
+          currentSkipMode = false
+        } else {
+          currentSkipMode = true
+        }
+      }
+      idx++; continue
+    }
+
+    // ── 7. DEFAULT ────────────────────────────────────────────────
+    if (line === 'default:' && inSwitch) {
+      if (switchDone || switchMatched) {
+        currentSkipMode = true
+        console.log(`  → TYPE: DEFAULT (skipped - already matched)`)
+      } else {
+        currentSkipMode = false
+        console.log(`  → TYPE: DEFAULT (executing)`)
+        recordStep(lineNum, `🔽 DEFAULT: tidak ada case yang cocok`)
+      }
+      idx++; continue
+    }
+
+    // ── 8. BREAK ──────────────────────────────────────────────────
+    if (line === 'break;' || line === 'break') {
+      if (inSwitch && !currentSkipMode) {
+        switchDone = true
+        currentSkipMode = true
+        console.log(`  → TYPE: BREAK (switch done)`)
+        recordStep(lineNum, `⛔ BREAK: keluar dari switch`)
+      } else {
+        console.log(`  → TYPE: BREAK (skipped)`)
+      }
+      idx++; continue
+    }
+
+    // ── 9. IF ─────────────────────────────────────────────────────
     const ifMatch = line.match(/^if\s*\((.+)\)\s*\{?$/)
     if (ifMatch) {
       const condition = ifMatch[1].trim()
 
-      // Push SEBELUM eval — simpan state parent
       if (line.includes('{')) pushBlock()
 
       if (currentSkipMode) {
@@ -375,13 +445,11 @@ if (line.match(/^\}\s*else(\s*\{.*)?$/)) {
         currentSkipMode = true
       }
 
-      // Update stack entry dengan hasil IF
       if (line.includes('{')) updateStackIfState()
-
       idx++; continue
     }
 
-    // ── 6. ELSE IF standalone ("else if (...) {") ─────────────────
+    // ── 10. ELSE IF standalone ────────────────────────────────────
     const elseIfMatch = line.match(/^else\s+if\s*\((.+)\)\s*\{?$/)
     if (elseIfMatch) {
       console.log(`  → TYPE: ELSE IF standalone`)
@@ -391,13 +459,11 @@ if (line.match(/^\}\s*else(\s*\{.*)?$/)) {
         const condResult = evalCondition(condition)
         console.log(`    Condition: "${condition}" → ${condResult ? 'TRUE ✅' : 'FALSE ❌'}`)
         recordStep(lineNum, `🔀 ELSE IF: "${condition}" → ${condResult ? '✅ TRUE' : '❌ FALSE'}`)
-
         if (condResult) {
           currentSkipMode = false
           currentBranchSelected = true
           currentPendingElse = false
         }
-        // false: skipMode tetap true, pendingElse tetap true
       } else {
         console.log(`  → ELSE IF skipped (branch already selected)`)
         currentSkipMode = true
@@ -407,11 +473,10 @@ if (line.match(/^\}\s*else(\s*\{.*)?$/)) {
         pushBlock()
         updateStackIfState()
       }
-
       idx++; continue
     }
 
-    // ── 7. ELSE standalone ────────────────────────────────────────
+    // ── 11. ELSE standalone ───────────────────────────────────────
     if (line === 'else' || line === 'else {') {
       console.log(`  → TYPE: ELSE standalone`)
 
@@ -429,47 +494,128 @@ if (line.match(/^\}\s*else(\s*\{.*)?$/)) {
         pushBlock()
         updateStackIfState()
       }
-
       idx++; continue
     }
 
-    // ── 8. DECLARATION ────────────────────────────────────────────
-    const declMatch = line.match(/^(int|float|double|char|bool|string)\s+(\w+)(?:\s*=\s*(.+))?;?$/)
-    if (declMatch) {
-      if (!currentSkipMode) {
-        console.log(`  → TYPE: DECLARATION`)
-        const varType = declMatch[1]
-        const varName = declMatch[2]
-        let value: any = 0
-        if (declMatch[3]) value = evalExpr(declMatch[3].trim().replace(/;$/, ''))
-        setVar(varName, value, varType)
-        recordStep(lineNum, `📦 Deklarasi variabel: ${varType} ${varName} = ${JSON.stringify(value)}`)
-      } else {
-        console.log(`  → TYPE: DECLARATION (skipped)`)
-      }
-      idx++; continue
-    }
+    // ── 12. DECLARATION ───────────────────────────────────────────
+// ── 12. DECLARATION (SINGLE & MULTIPLE VARIABLES) ──
+const singleDeclMatch = line.match(/^(int|float|double|char|bool|string)\s+(\w+)(?:\s*=\s*(.+))?;?$/)
+const multiDeclMatch = line.match(/^(int|float|double|char|bool|string)\s+([\w,\s]+);$/)
 
-    // ── 9. CIN ────────────────────────────────────────────────────
-    if (line.startsWith('cin')) {
-      if (!currentSkipMode) {
-        console.log(`  → TYPE: CIN`)
-        const cinMatch = line.match(/cin\s*>>\s*(\w+)/)
-        if (cinMatch && options?.onInput) {
-          const varName = cinMatch[1]
-          recordStep(lineNum, `⌨️ Meminta input untuk variabel: ${varName}`)
-          const inputValue = await options.onInput(varName, 'int')
-          const parsedValue = parseInt(inputValue) || 0
-          setVar(varName, parsedValue)
-          recordStep(lineNum, `✅ Input diterima: ${varName} = ${parsedValue}`)
+if (singleDeclMatch || multiDeclMatch) {
+  if (!currentSkipMode) {
+    console.log(`  → TYPE: DECLARATION`)
+    
+    if (singleDeclMatch) {
+      // Single variable declaration
+      const varType = singleDeclMatch[1]
+      const varName = singleDeclMatch[2]
+      let value: any = 0
+      if (singleDeclMatch[3]) value = evalExpr(singleDeclMatch[3].trim().replace(/;$/, ''))
+      setVar(varName, value, varType)
+      recordStep(lineNum, `📦 Deklarasi variabel: ${varType} ${varName} = ${JSON.stringify(value)}`)
+    } 
+    else if (multiDeclMatch) {
+      // Multiple variables: int a, b, c;
+      const varType = multiDeclMatch[1]
+      const varNamesStr = multiDeclMatch[2]
+      const varNames = varNamesStr.split(',').map(name => name.trim())
+      
+      for (const varName of varNames) {
+        // Cek apakah ada assignment? (biasanya multiple declaration ga pake assignment)
+        const hasAssignment = varName.includes('=')
+        if (hasAssignment) {
+          const [name, expr] = varName.split('=')
+          const value = evalExpr(expr.trim())
+          setVar(name.trim(), value, varType)
+          recordStep(lineNum, `📦 Deklarasi variabel: ${varType} ${name.trim()} = ${JSON.stringify(value)}`)
+        } else {
+          setVar(varName, 0, varType)
+          recordStep(lineNum, `📦 Deklarasi variabel: ${varType} ${varName} = 0`)
         }
-      } else {
-        console.log(`  → TYPE: CIN (skipped)`)
       }
-      idx++; continue
     }
+  } else {
+    console.log(`  → TYPE: DECLARATION (skipped)`)
+  }
+  idx++; continue
+}
 
-    // ── 10. COUT ──────────────────────────────────────────────────
+// ── 13. CIN ───────────────────────────────────────────────────
+if (line.startsWith('cin')) {
+  if (!currentSkipMode) {
+    console.log(`  → TYPE: CIN`)
+    const cinMatch = line.match(/cin\s*>>\s*(\w+)/)
+    if (cinMatch && options?.onInput) {
+      const varName = cinMatch[1]
+      // Cari tipe variabel dari variables map
+      const varType = variables[varName]?.type ?? 'int'
+
+      recordStep(lineNum, `⌨️ Meminta input untuk variabel: ${varName}`)
+      const inputValue = await options.onInput(varName, varType)
+
+      // ✅ VALIDASI & PARSE SESUAI TIPE
+      let parsedValue: any
+      const trimmedInput = String(inputValue).trim()
+      
+      switch (varType) {
+        case 'int':
+          const intMatch = trimmedInput.match(/^-?\d+$/)
+          if (intMatch) {
+            parsedValue = parseInt(intMatch[0], 10)
+          } else {
+            parsedValue = 0
+            recordStep(lineNum, `⚠️ Input "${trimmedInput}" tidak valid untuk int, menggunakan 0`)
+          }
+          break
+          
+        case 'float':
+        case 'double':
+          const floatMatch = trimmedInput.match(/^-?\d+(?:\.\d+)?$/)
+          if (floatMatch) {
+            parsedValue = parseFloat(floatMatch[0])
+          } else {
+            parsedValue = 0.0
+            recordStep(lineNum, `⚠️ Input "${trimmedInput}" tidak valid untuk float, menggunakan 0.0`)
+          }
+          break
+          
+        case 'bool':
+          const lowerInput = trimmedInput.toLowerCase()
+          if (lowerInput === 'true' || lowerInput === '1') {
+            parsedValue = true
+          } else if (lowerInput === 'false' || lowerInput === '0') {
+            parsedValue = false
+          } else {
+            parsedValue = false
+            recordStep(lineNum, `⚠️ Input "${trimmedInput}" tidak valid untuk bool, menggunakan false`)
+          }
+          break
+          
+        case 'char':
+          parsedValue = trimmedInput.charAt(0) || '\0'
+          break
+          
+        case 'string':
+          parsedValue = trimmedInput
+          break
+          
+        default:
+          parsedValue = parseInt(trimmedInput, 10)
+          if (isNaN(parsedValue)) parsedValue = 0
+          break
+      }
+
+      setVar(varName, parsedValue, varType)
+      recordStep(lineNum, `✅ Input diterima: ${varName} = ${JSON.stringify(parsedValue)}`)
+    }
+  } else {
+    console.log(`  → TYPE: CIN (skipped)`)
+  }
+  idx++; continue
+}
+
+    // ── 14. COUT ──────────────────────────────────────────────────
     if (line.startsWith('cout')) {
       if (!currentSkipMode) {
         console.log(`  → TYPE: COUT (executing)`)
@@ -482,7 +628,7 @@ if (line.match(/^\}\s*else(\s*\{.*)?$/)) {
       idx++; continue
     }
 
-    // ── 11. ASSIGNMENT ────────────────────────────────────────────
+    // ── 15. ASSIGNMENT ────────────────────────────────────────────
     const assignMatch = line.match(/^(\w+)\s*=\s*(.+?);?$/)
     if (assignMatch && !line.includes('==') && !line.includes('!=')) {
       if (!currentSkipMode) {
@@ -497,7 +643,7 @@ if (line.match(/^\}\s*else(\s*\{.*)?$/)) {
       idx++; continue
     }
 
-    // ── 12. RETURN ────────────────────────────────────────────────
+    // ── 16. RETURN ────────────────────────────────────────────────
     if (line.startsWith('return')) {
       console.log(`  → TYPE: RETURN`)
       recordStep(lineNum, `✅ Program selesai (return 0)`)
