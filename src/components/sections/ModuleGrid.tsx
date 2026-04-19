@@ -52,6 +52,12 @@ type ModuleStyle = {
   button: string
 }
 
+const firstTopicByModule: Record<string, string> = {
+  percabangan: 'if',
+  perulangan: 'for-loop',
+  'struktur-data': 'array',
+}
+
 const colorStyles: Record<ModuleColor, ModuleStyle> = {
   emerald: {
     border: 'border-emerald-500/30',
@@ -79,34 +85,36 @@ const colorStyles: Record<ModuleColor, ModuleStyle> = {
 export default function ModuleGrid() {
   return (
     <section className="py-20">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12">
-          <h2 className="text-white text-3xl font-bold tracking-tight">
+      <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
+        <div className="mb-12 text-center">
+          <h2 className="text-3xl font-bold tracking-tight text-white">
             Pilih Modul Belajar
           </h2>
-          <p className="text-gray-400 mt-2">
+          <p className="mt-2 text-gray-400">
             Mulai dari mana saja, belajar sesuai kecepatanmu
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {modules.map((module) => (
-            <Link href={`/learn/${module.id}`} key={module.id}>
-              <div
-                className={`group relative p-6 rounded-xl border ${colorStyles[module.color].border} ${colorStyles[module.color].hover} transition-all duration-200 hover:scale-[1.02] hover:shadow-xl bg-gradient-to-b ${module.gradient}`}
-              >
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {modules.map((module) => {
+            const firstTopic = firstTopicByModule[module.id] ?? 'if'
+            return (
+              <Link href={`/learn/${module.id}/${firstTopic}`} key={module.id}>
+                <div
+                  className={`group relative p-6 rounded-xl border ${colorStyles[module.color].border} ${colorStyles[module.color].hover} transition-all duration-200 hover:scale-[1.02] hover:shadow-xl bg-gradient-to-b ${module.gradient}`}
+                >
                 {/* Icon */}
                 <div className={`w-14 h-14 rounded-xl ${colorStyles[module.color].iconBg} flex items-center justify-center text-3xl mb-4`}>
                   {module.icon}
                 </div>
 
                 {/* Title */}
-                <h3 className="text-xl font-semibold text-white mb-2">
+                <h3 className="mb-2 text-xl font-semibold text-white">
                   {module.title}
                 </h3>
 
                 {/* Description */}
-                <p className="text-gray-400 text-sm leading-relaxed mb-4">
+                <p className="mb-4 text-sm leading-relaxed text-gray-400">
                   {module.description}
                 </p>
 
@@ -121,7 +129,7 @@ export default function ModuleGrid() {
                 </div>
               </div>
             </Link>
-          ))}
+          )})}
         </div>
       </div>
     </section>

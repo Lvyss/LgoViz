@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/xampp/htdocs/Lproject/Project/Project Kuliah/SEMESTER 4/PSBI/lgoviz/**)",
+      "Bash(rtk tsc *)",
+      "Read(//c/xampp/htdocs/Lproject/Project Kuliah/SEMESTER 4/PSBI/lgoviz/**)",
+      "Bash(rtk npm *)"
+    ]
+  }
+}

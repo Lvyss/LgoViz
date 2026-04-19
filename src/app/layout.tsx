@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { Inter, JetBrains_Mono } from 'next/font/google'
-import '@/styles/globals.css'
+import '@/app/globals.css'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 
@@ -26,7 +26,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="id" className={`${inter.variable} ${jetbrainsMono.variable}`}>
-      <body className="min-h-screen flex flex-col">
+      <body className="flex flex-col min-h-screen">
         <div className="bg-glow-orb" />
         <Navbar />
         <main className="flex-1 pt-16">{children}</main>

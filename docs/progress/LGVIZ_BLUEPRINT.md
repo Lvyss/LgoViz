@@ -1,12 +1,12 @@
-# 🎮 LgoViz — Project Blueprint (Master Document)
+# LgoViz — Project Blueprint v2.0
 
-> **Versi:** 1.0 | **Dibuat:** April 2026  
-> **Deskripsi:** Media pembelajaran visualisasi algoritma berbasis web untuk siswa SMK RPL — stack Next.js + Supabase + pixel art UI.  
+> **Versi:** 2.0 | **Revisi dari:** v1.0 (April 2026)
+> **Perubahan utama:** Desain pivot ke premium minimalis dark, tambah sistem evaluasi quiz, admin panel, progress tracking, dan konten materi disimpan di Supabase (bukan hardcode).
 > **Dokumen ini adalah "bible" project. Baca sebelum mulai setiap step.**
 
 ---
 
-## 📋 DAFTAR ISI
+## DAFTAR ISI
 
 1. [Role](#1-role)
 2. [Context](#2-context)
@@ -15,9 +15,10 @@
 5. [Struktur Folder Target](#5-struktur-folder-target)
 6. [Skema Database Supabase](#6-skema-database-supabase)
 7. [Desain Sistem Interpreter Engine](#7-desain-sistem-interpreter-engine)
-8. [Panduan Tema Pixel Art](#8-panduan-tema-pixel-art)
-9. [Template Prompt Per Step](#9-template-prompt-per-step)
-10. [Template Summary MD Per Step](#10-template-summary-md-per-step)
+8. [Sistem Evaluasi & Progress](#8-sistem-evaluasi--progress)
+9. [Panduan Desain Premium Minimalis](#9-panduan-desain-premium-minimalis)
+10. [Template Prompt Per Step](#10-template-prompt-per-step)
+11. [Template Summary MD Per Step](#11-template-summary-md-per-step)
 
 ---
 
@@ -27,13 +28,12 @@
 Kamu adalah senior fullstack developer dan UI/UX engineer yang spesialis dalam:
 - Membangun aplikasi web edukasi interaktif dengan Next.js 14+ (App Router) dan TypeScript
 - Membuat interpreter engine berbasis JavaScript untuk memvisualisasikan eksekusi kode C++
-- Mendesain antarmuka bergaya pixel art / retro game dengan Tailwind CSS
-- Mengintegrasikan autentikasi dan database dengan Supabase
+- Mendesain antarmuka premium minimalis dark dengan Tailwind CSS — elegan, bersih, dan modern
+- Mengintegrasikan autentikasi, database, dan role-based access control dengan Supabase
 
-Kamu memahami konteks bahwa ini adalah media pembelajaran untuk siswa SMK jurusan RPL
-yang perlu memahami logika pemrograman (percabangan, perulangan, struktur data) secara visual
-dan interaktif. Pengguna utama adalah remaja 15-18 tahun yang familiar dengan browser dan
-perangkat digital. Kamu selalu menulis kode yang clean, terstruktur, dan mudah dikembangkan.
+Kamu memahami konteks bahwa ini adalah media pembelajaran untuk siswa SMK jurusan RPL.
+Fokus utama bukan hafalan materi, tapi pemahaman abstraksi logika pemrograman melalui
+visualisasi langsung. Kamu selalu menulis kode clean, terstruktur, dan mudah dikembangkan.
 ```
 
 ---
@@ -41,108 +41,160 @@ perangkat digital. Kamu selalu menulis kode yang clean, terstruktur, dan mudah d
 ## 2. CONTEXT
 
 ### 2.1 Deskripsi Produk
+
 **LgoViz** adalah aplikasi web pembelajaran algoritma yang memungkinkan siswa SMK RPL
 mengamati eksekusi kode C++ langkah demi langkah beserta perubahan nilai variabel secara
-real-time. Filosofinya seperti W3Schools — konten serius dan edukatif — tapi dengan UI
-bergaya pixel art / retro game seperti Codedex.io.
+real-time. Filosofi desain: **premium minimalis dark** — bersih, elegan, modern seperti
+produk SaaS mahal, bukan pixel art.
+
+**Flow belajar utama:**
+```
+Pilih Topik
+    ↓
+Halaman Visualizer
+  [Code Editor] + [Step Visualizer] + [Variable Tracker]
+  [Tombol ?] → Tooltip/Modal materi dasar pengertian
+    ↓
+Selesai eksplorasi visualisasi
+    ↓
+[Mulai Quiz] → 5 soal pilihan ganda tentang topik ini
+    ↓
+Skor ≥ 70%? → Topik UNLOCKED, lanjut ke topik berikutnya
+Skor < 70%? → Bisa retry quiz
+```
 
 ### 2.2 Target Pengguna
-- **Primer:** Siswa SMK jurusan RPL kelas X–XI
-- **Sekunder:** Guru pemrograman sebagai alat bantu mengajar
 
-### 2.3 Fitur Utama
+| Role | Akses | Deskripsi |
+|------|-------|-----------|
+| **Siswa** | `/`, `/auth/*`, `/dashboard`, `/learn/*`, `/quiz/*` | Pengguna utama, belajar dan mengerjakan quiz |
+| **Admin** | `/admin/*` | 1 akun via env variable, kelola semua konten dan data |
+
+### 2.3 Halaman Aplikasi
+
+```
+PUBLIC
+/                        → Landing Page
+/auth/login              → Login
+/auth/register           → Register
+
+SISWA (protected, role: student)
+/dashboard               → Overview progress semua modul
+/learn/[moduleId]        → Daftar topik dalam modul
+/learn/[moduleId]/[topicId]  → Halaman visualizer + quiz
+
+ADMIN (protected, role: admin)
+/admin                   → Dashboard admin (overview statistik)
+/admin/questions         → Kelola soal (CRUD)
+/admin/questions/new     → Tambah soal baru
+/admin/questions/[id]    → Edit soal
+/admin/materials         → Kelola materi (teks/kode per topik)
+/admin/students          → Daftar siswa + progress mereka
+/admin/students/[id]     → Detail progress siswa
+```
+
+### 2.4 Fitur Utama
+
 | Fitur | Deskripsi |
 |-------|-----------|
 | **Code Editor** | Monaco Editor dengan syntax highlighting C++ |
 | **Step Visualizer** | Eksekusi kode C++ langkah demi langkah |
-| **Code Highlighter** | Penanda baris aktif yang sedang dieksekusi |
+| **Code Highlighter** | Highlight baris aktif yang sedang dieksekusi |
 | **Variable Tracker** | Panel real-time perubahan nilai variabel tiap langkah |
-| **Animation Control** | Tombol play, pause, next, prev, first, last + speed slider |
-| **Modul Konten** | 3 modul: Percabangan, Perulangan, Struktur Data & Algoritma |
-| **Auth System** | Login / Register via Supabase Auth |
-| **Pixel Art UI** | Tema retro game dengan font pixel, border tebal, aksen neon |
-
-### 2.4 Halaman Aplikasi
-```
-/                        → Landing Page
-/auth/login              → Login
-/auth/register           → Register
-/dashboard               → Pilih Modul
-/learn/[moduleId]        → Halaman Materi + Visualizer
-```
+| **Animation Control** | Play, pause, next, prev, first, last + speed slider |
+| **Tombol ?** | Modal/tooltip materi dasar per topik (pengertian singkat) |
+| **Quiz System** | 5 soal pilihan ganda per topik, skor ≥ 70% untuk unlock |
+| **Progress Tracking** | Track topik yang sudah selesai dan skor quiz per siswa |
+| **Admin Panel** | CRUD soal, edit materi, lihat progress siswa, manage user |
+| **Unlock System** | Topik berikutnya unlocked setelah quiz lulus |
 
 ### 2.5 Tech Stack
+
 ```
 Frontend     : Next.js 14 (App Router) + TypeScript
-Styling      : Tailwind CSS + Custom CSS Variables (pixel theme)
+Styling      : Tailwind CSS v4 + Custom CSS Variables (premium dark theme)
 Code Editor  : Monaco Editor (@monaco-editor/react)
 Parser C++   : tree-sitter / tree-sitter-c (WebAssembly build)
 Evaluator    : Custom JavaScript evaluator (dibuat manual)
 Animasi      : Framer Motion
-Auth & DB    : Supabase (Auth + PostgreSQL)
+Auth & DB    : Supabase (Auth + PostgreSQL + Row Level Security)
 Deployment   : Vercel
-Font Pixel   : "Press Start 2P" (Google Fonts)
+Font         : Inter (Google Fonts) — clean, modern, bukan pixel
 ```
 
 ### 2.6 Arsitektur Sistem
+
 ```
-┌─────────────────────────────────────────────────────┐
-│                    FRONTEND (Next.js)                │
-│                                                      │
-│  ┌──────────────┐    ┌──────────────────────────┐   │
-│  │ Monaco Editor│───▶│   Interpreter Engine      │   │
-│  │  (kode C++)  │    │                          │   │
-│  └──────────────┘    │  1. Parser (tree-sitter)  │   │
-│                      │     → AST                 │   │
-│  ┌──────────────┐    │  2. Evaluator (JS)        │   │
-│  │  Modul/Materi│    │     → Execution Trace []  │   │
-│  │  (hardcode)  │    └────────────┬─────────────┘   │
-│  └──────────────┘                 │                  │
-│                                   ▼                  │
-│  ┌────────────────────────────────────────────────┐  │
-│  │              Visualizer UI                     │  │
-│  │  ┌─────────────────┐  ┌─────────────────────┐  │  │
-│  │  │ Code Highlighter│  │  Variable Tracker    │  │  │
-│  │  │ (baris aktif)   │  │  (nilai variabel)    │  │  │
-│  │  └─────────────────┘  └─────────────────────┘  │  │
-│  │         ┌────────────────────────────┐          │  │
-│  │         │    Animation Controls      │          │  │
-│  │         │ ◀◀  ◀  ▶  ▶▶  ⏸  speed   │          │  │
-│  │         └────────────────────────────┘          │  │
-│  └────────────────────────────────────────────────┘  │
-│                                                      │
-└─────────────────────────────────────────────────────┘
-              │ Auth + User Data
-              ▼
-┌─────────────────────────┐
-│      SUPABASE           │
-│  - Auth (login/register)│
-│  - Table: users         │
-└─────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│                    FRONTEND (Next.js)                        │
+│                                                              │
+│  SISWA FLOW                                                  │
+│  ┌──────────────┐    ┌──────────────────────────────────┐   │
+│  │ Monaco Editor│───▶│      Interpreter Engine           │   │
+│  │  (kode C++)  │    │  Parser (tree-sitter) → AST       │   │
+│  └──────────────┘    │  Evaluator (JS) → Execution Trace │   │
+│                      └──────────────┬───────────────────┘   │
+│  ┌──────────────┐                   │                        │
+│  │  Tombol [?]  │                   ▼                        │
+│  │  → Modal     │    ┌──────────────────────────────────┐   │
+│  │  materi      │    │  Visualizer UI                    │   │
+│  │  dasar       │    │  Code Highlighter + Var Tracker   │   │
+│  └──────────────┘    │  Animation Controls               │   │
+│                      └──────────────────────────────────┘   │
+│                                   ↓                          │
+│                      ┌──────────────────────────────────┐   │
+│                      │  Quiz System                      │   │
+│                      │  5 soal PG dari Supabase          │   │
+│                      │  Skor ≥ 70% → unlock next topic   │   │
+│                      └──────────────────────────────────┘   │
+│                                                              │
+│  ADMIN FLOW                                                  │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │  Admin Panel                                          │   │
+│  │  CRUD Questions | Edit Materials | View Progress      │   │
+│  │  Manage Students                                      │   │
+│  └──────────────────────────────────────────────────────┘   │
+└──────────────────────────────────────────────────────────────┘
+                │ All data via Supabase Client/Server
+                ▼
+┌───────────────────────────────────────────────────────────┐
+│                      SUPABASE                             │
+│  Auth (login/register/role)                               │
+│  PostgreSQL:                                              │
+│    - profiles (user data + role)                          │
+│    - modules (data modul)                                 │
+│    - topics (data topik per modul)                        │
+│    - materials (konten materi per topik — editable admin) │
+│    - questions (soal quiz per topik — CRUD admin)         │
+│    - question_options (pilihan jawaban)                   │
+│    - user_progress (progress per topik per user)          │
+│    - quiz_attempts (riwayat pengerjaan quiz)              │
+└───────────────────────────────────────────────────────────┘
 ```
 
-### 2.7 Konten Modul (Hardcode di Frontend)
+### 2.7 Konten Modul
+
 ```
-Modul 1: Percabangan
-  - if tunggal
-  - if-else
-  - else-if berantai
-  - nested if
-  - switch-case
+Modul 1: Percabangan (5 topik)
+  1. if tunggal
+  2. if-else
+  3. else-if berantai
+  4. nested if
+  5. switch-case
 
-Modul 2: Perulangan
-  - for loop
-  - while loop
-  - do-while loop
-  - nested loop
-  - break & continue
+Modul 2: Perulangan (5 topik)
+  1. for loop
+  2. while loop
+  3. do-while loop
+  4. nested loop
+  5. break & continue
 
-Modul 3: Struktur Data & Algoritma
-  - Array
-  - Stack
-  - Queue
-  - Linear Search
-  - Bubble Sort
+Modul 3: Struktur Data & Algoritma (5 topik)
+  1. Array
+  2. Stack
+  3. Queue
+  4. Linear Search
+  5. Bubble Sort
 ```
 
 ---
@@ -150,27 +202,26 @@ Modul 3: Struktur Data & Algoritma
 ## 3. CONSTRAINT
 
 ### 3.1 Constraint Teknis
+
 ```
 1. Interpreter engine HARUS berjalan sepenuhnya di sisi client (client-side only).
-   Tidak boleh ada server backend untuk eksekusi kode — alasan: aksesibilitas offline
-   dan keamanan (tidak ada code execution di server).
+   Tidak ada server backend untuk eksekusi kode.
 
 2. Gunakan Next.js App Router (bukan Pages Router).
 
 3. Semua komponen UI yang butuh interaktivitas harus diberi directive "use client".
 
-4. Konten materi (teks penjelasan, template kode) di-hardcode sebagai TypeScript
-   object/array di folder /src/data/ — TIDAK disimpan di Supabase.
-   Supabase hanya untuk: autentikasi user.
+4. Konten materi (teks penjelasan, kode contoh) DISIMPAN di Supabase tabel materials.
+   Bukan hardcode. Admin bisa edit via admin panel.
 
-5. Monaco Editor harus di-load dengan dynamic import (next/dynamic) karena SSR
-   tidak kompatibel.
+5. Soal quiz DISIMPAN di Supabase tabel questions + question_options.
+   Admin bisa CRUD via admin panel.
 
-6. tree-sitter-c menggunakan WebAssembly — harus diinisialisasi async sebelum dipakai.
-   Tangani loading state dengan benar.
+6. Monaco Editor harus di-load dengan dynamic import (next/dynamic, ssr: false).
 
-7. Execution Trace adalah array of StepObject. Satu step = satu perubahan state program.
-   Format:
+7. tree-sitter-c menggunakan WebAssembly — harus diinisialisasi async.
+
+8. Execution Trace format:
    {
      stepIndex: number,
      lineNumber: number,
@@ -179,37 +230,68 @@ Modul 3: Struktur Data & Algoritma
      explanation: string
    }
 
-8. Jangan gunakan library CSS component (MUI, Chakra, shadcn) — semua styling
-   pakai Tailwind CSS + custom CSS variables saja agar konsisten dengan pixel theme.
+9. Role-based access:
+   - role 'student': akses /dashboard, /learn/*, /quiz/*
+   - role 'admin': akses semua + /admin/*
+   - Admin diset via Supabase dashboard (update kolom role di tabel profiles)
+   - ADMIN_EMAIL disimpan di .env sebagai referensi
 
-9. TypeScript strict mode ON. Tidak ada penggunaan 'any' kecuali di evaluator engine
-   yang memang butuh dynamic typing.
+10. Row Level Security (RLS) Supabase WAJIB diaktifkan:
+    - Siswa hanya bisa read/write data miliknya sendiri
+    - Admin bisa read/write semua data
+    - Quiz questions hanya bisa dibaca oleh authenticated users
+    - Materials bisa dibaca oleh authenticated users, ditulis hanya admin
 
-10. Setiap komponen harus ada di folder yang sesuai strukturnya (lihat bagian 5).
+11. Styling: Tailwind CSS v4 + CSS variables saja. TIDAK pakai UI library (MUI, Chakra, dll).
+
+12. TypeScript strict mode ON.
+
+13. Unlock system: topik ke-N hanya bisa diakses jika topik ke-(N-1) sudah lulus quiz
+    (skor ≥ 70%). Topik pertama setiap modul selalu unlocked.
 ```
 
 ### 3.2 Constraint Desain
+
 ```
-1. Warna utama: dark background (#0a0a0f), aksen neon hijau (#00ff88) dan
-   neon biru (#00d4ff), teks utama (#e2e8f0).
+FILOSOFI: Premium minimalis dark. Seperti produk SaaS mahal (Linear, Vercel, Resend).
+Bukan pixel art, bukan gamifikasi berlebihan. Fokus ke konten dan fungsi.
 
-2. Font heading / aksen: "Press Start 2P" (pixel font).
-   Font body / konten: "VT323" atau "Courier New" (monospace retro).
+1. Background: #060608 (hampir hitam, bukan hitam murni)
+   Gunakan subtle radial gradient sebagai "atmospheric glow" di belakang hero/section
 
-3. Border style: solid 2px dengan warna aksen — NO rounded corners kecuali
-   di komponen kecil seperti badge/tag.
+2. Surface/panel: rgba(255,255,255,0.04) dengan border rgba(255,255,255,0.08)
+   Efek glass minimal, bukan frosted glass penuh
 
-4. Animasi: blocky/snappy (tidak smooth easing). Gunakan steps() di CSS transition
-   untuk efek pixel.
+3. Accent: #00e87a (hijau) untuk success/primary action
+             #38bdf8 (biru) untuk info/secondary
+             #a78bfa (ungu) untuk advanced/highlight
+   Penggunaan MINIMAL — hanya untuk elemen yang benar-benar butuh atensi
 
-5. Semua panel utama punya "scanline" effect subtle di background (CSS overlay).
+4. Typography: Inter (weight 300, 400, 500 saja — TIDAK 600 atau 700)
+   - Display/heading: 500 weight, letter-spacing -0.3px
+   - Body: 400 weight, line-height 1.7
+   - Caption/label: 300 weight, letter-spacing 0.5px
+   - NO ALL CAPS kecuali label kategori kecil (font-size ≤ 10px)
 
-6. Cursor custom: pixel cursor jika memungkinkan.
+5. Border radius: 8px untuk komponen kecil, 12px untuk card, TIDAK ada yang bulat penuh
+   kecuali badge/chip (border-radius 100px)
 
-7. Responsive: minimal bisa dipakai di tablet (768px). Mobile bukan prioritas utama.
+6. Animasi: subtle dan smooth. Framer Motion dengan duration 0.2s, ease: [0.4, 0, 0.2, 1]
+   Tidak ada animasi yang mencolok atau berlebihan
+
+7. Spacing: generous whitespace. Padding section minimal 80px vertikal.
+
+8. Hover state: very subtle — background naik sedikit opacity, border sedikit lebih terang
+   Tidak ada color change drastis saat hover
+
+9. Setiap "full section" di landing page punya min-height yang membuat konten terasa
+   "bernapas" — tidak padat, tidak terlalu renggang
+
+10. Tidak ada shadow (box-shadow: none) kecuali untuk focus ring input (outline style)
 ```
 
 ### 3.3 Constraint Proses
+
 ```
 1. Setiap step chaining WAJIB diakhiri dengan membuat file summary:
    /docs/progress/step-[N]-summary.md
@@ -220,9 +302,12 @@ Modul 3: Struktur Data & Algoritma
 3. Jangan lanjut ke step berikutnya sebelum summary dibuat.
 
 4. Jika ada perubahan dari rencana awal, catat di summary sebagai
-   "⚠️ DEVIATION" beserta alasannya.
+   "DEVIATION" beserta alasannya.
 
 5. Test setiap fitur secara manual sebelum pindah step.
+
+6. Seed data: buat file seed SQL di /supabase/seed.sql untuk isi data awal
+   (modul, topik, dan minimal 1 soal per topik untuk testing).
 ```
 
 ---
@@ -230,253 +315,264 @@ Modul 3: Struktur Data & Algoritma
 ## 4. CHAINING — MASTER PLAN
 
 ### Overview
+
 ```
-STEP 1 → Setup & Auth
-STEP 2 → Layout & Pixel Art Theme
-STEP 3 → Data Konten & Halaman Materi
-STEP 4 → Interpreter Engine (Core)
-STEP 5 → Visualizer UI
-STEP 6 → Animation Controls & Polish
-STEP 7 → Integrasi Final & Deploy
+STEP 1 → Setup, Auth & Database Schema
+STEP 2 → Desain Sistem & Komponen UI
+STEP 3 → Landing Page, Auth Pages & Dashboard
+STEP 4 → Halaman Learn & Visualizer Shell
+STEP 5 → Interpreter Engine (Core)
+STEP 6 → Visualizer UI (Highlighter + Variable Tracker + Controls)
+STEP 7 → Sistem Quiz & Progress Tracking
+STEP 8 → Admin Panel
+STEP 9 → Integrasi Final, Polish & Deploy
 ```
 
 ---
 
-### STEP 1 — Project Setup & Autentikasi
-**Durasi estimasi:** 1–2 hari  
-**Output:** Project bisa dijalankan, halaman login/register berfungsi
+### STEP 1 — Setup, Auth & Database Schema
+**Durasi estimasi:** 1–2 hari
+**Output:** Project berjalan, auth berfungsi, semua tabel database siap
 
 **Yang dikerjakan:**
-- Init project Next.js 14 + TypeScript + Tailwind CSS
-- Setup Supabase project (buat project, copy env keys)
-- Install semua dependencies utama
-- Konfigurasi Tailwind dengan custom pixel theme (warna, font)
-- Buat layout dasar (Navbar, Footer)
-- Halaman `/auth/login` dan `/auth/register`
-- Supabase Auth integration (signIn, signUp, signOut)
-- Protected route: `/dashboard` hanya bisa diakses kalau sudah login
-- Middleware Next.js untuk auth guard
+- Init project Next.js 14 + TypeScript + Tailwind CSS v4
+- Install semua dependencies
+- Setup Supabase project + environment variables
+- Buat semua tabel database dengan SQL (lihat bagian 6)
+- Aktifkan Row Level Security untuk semua tabel
+- Buat Supabase Auth integration (signIn, signUp, signOut)
+- Buat middleware/proxy untuk auth guard + role guard
+- Buat seed SQL untuk data awal (modul, topik, soal contoh)
+- Halaman login dan register (functional, styling minimal dulu)
 
-**Dependencies yang diinstall di step ini:**
+**Dependencies:**
 ```bash
 npm install @supabase/supabase-js @supabase/ssr
 npm install framer-motion
 npm install @monaco-editor/react
+npm install web-tree-sitter
 ```
 
 **File yang dibuat:**
 ```
 src/
-  app/
-    layout.tsx               ← Root layout + font import
-    page.tsx                 ← Landing page (placeholder dulu)
-    auth/
-      login/page.tsx
-      register/page.tsx
-    dashboard/page.tsx       ← Protected, placeholder
-  components/
-    ui/
-      PixelButton.tsx        ← Komponen tombol pixel art
-      PixelCard.tsx          ← Komponen card pixel art
-    layout/
-      Navbar.tsx
-      Footer.tsx
-  lib/
-    supabase/
-      client.ts              ← Supabase browser client
-      server.ts              ← Supabase server client
-  middleware.ts              ← Auth guard
-  styles/
-    globals.css              ← CSS variables + scanline effect
+  lib/supabase/client.ts
+  lib/supabase/server.ts
+  types/database.ts          ← Generated types dari Supabase
+  types/app.ts               ← Custom app types
+  middleware.ts / proxy.ts   ← Auth + role guard
+  app/auth/login/page.tsx
+  app/auth/register/page.tsx
+supabase/
+  schema.sql                 ← DDL semua tabel
+  seed.sql                   ← Data awal
+  rls.sql                    ← Row Level Security policies
+.env.local
+.env.example
 ```
 
-**Kriteria selesai (Definition of Done):**
+**Kriteria selesai:**
 - [ ] `npm run dev` berjalan tanpa error
-- [ ] User bisa register akun baru
-- [ ] User bisa login
-- [ ] User bisa logout
-- [ ] Akses `/dashboard` tanpa login → redirect ke `/auth/login`
-- [ ] Font "Press Start 2P" muncul di heading
-- [ ] Warna tema dark sudah teraplikasi
+- [ ] Register, login, logout berfungsi
+- [ ] Redirect ke /dashboard setelah login
+- [ ] Akses /dashboard tanpa login → redirect ke /auth/login
+- [ ] Akses /admin/* sebagai student → redirect ke /dashboard
+- [ ] Semua tabel terbuat di Supabase dashboard
+- [ ] RLS aktif di semua tabel
+- [ ] Seed data berhasil dijalankan
 
 ---
 
-### STEP 2 — Layout & Pixel Art Theme
-**Durasi estimasi:** 1–2 hari  
-**Output:** Semua halaman punya shell UI yang konsisten dan terlihat seperti pixel art game
+### STEP 2 — Desain Sistem & Komponen UI
+**Durasi estimasi:** 1–2 hari
+**Output:** Design system lengkap, semua komponen reusable siap pakai
 
 **Yang dikerjakan:**
-- Landing page lengkap (hero section, feature cards, CTA)
-- Dashboard page (grid modul dengan pixel card)
-- Shell halaman `/learn/[moduleId]` (layout split: editor kiri, visualizer kanan)
-- Komponen UI pixel art library:
-  - `PixelButton` (primary, secondary, danger)
-  - `PixelCard` (dengan border retro)
-  - `PixelBadge` (untuk label modul)
-  - `ProgressBar` pixel style
-  - `Navbar` dengan pixel logo
-- Efek visual: scanline overlay, CRT glow pada text, cursor blink
-- Animasi masuk halaman dengan Framer Motion (blocky transitions)
-
-**File yang dibuat/diubah:**
-```
-src/
-  app/
-    page.tsx                 ← Landing page lengkap
-    dashboard/page.tsx       ← Grid modul
-    learn/[moduleId]/
-      page.tsx               ← Shell layout visualizer
-  components/
-    ui/
-      PixelButton.tsx
-      PixelCard.tsx
-      PixelBadge.tsx
-      PixelProgressBar.tsx
-      ScanlineOverlay.tsx
-    sections/
-      HeroSection.tsx
-      FeatureSection.tsx
-      ModuleGrid.tsx
-  styles/
-    globals.css              ← Tambah pixel effects
-```
-
-**Kriteria selesai:**
-- [ ] Landing page terlihat seperti game retro, bukan website biasa
-- [ ] Font "Press Start 2P" konsisten di semua heading
-- [ ] Warna neon (#00ff88, #00d4ff) muncul sebagai aksen
-- [ ] Semua halaman sudah punya layout shell yang benar
-- [ ] Tidak ada komponen yang pakai warna/font "default" Tailwind
-
----
-
-### STEP 3 — Data Konten & Halaman Materi
-**Durasi estimasi:** 1–2 hari  
-**Output:** Semua konten materi bisa dibaca, halaman learn berfungsi dengan template kode
-
-**Yang dikerjakan:**
-- Buat TypeScript data structure untuk modul, topik, dan template kode
-- Isi semua 15 topik dengan:
-  - Judul dan deskripsi
-  - Penjelasan konsep (teks)
-  - Template kode C++ starter
-  - Kode C++ contoh yang sudah benar
-  - Poin-poin learning objective
-- Halaman `/learn/[moduleId]` menampilkan:
-  - Sidebar daftar topik
-  - Panel materi (teks penjelasan)
-  - Monaco Editor dengan template kode
-  - Navigasi antar topik
+- Setup CSS variables lengkap di globals.css (premium dark theme)
+- Setup Tailwind config dengan custom tokens
+- Buat komponen UI library:
+  - `Button` (primary, secondary, ghost, danger — ukuran sm/md/lg)
+  - `Card` (default, hover, bordered)
+  - `Badge` / `Chip` (success, info, warning, muted)
+  - `Input`, `Textarea`, `Select`
+  - `Modal` / `Dialog`
+  - `Tooltip` (untuk tombol ?)
+  - `ProgressBar`
+  - `Skeleton` (loading state)
+  - `Avatar`
+  - `Navbar` + `Sidebar`
+  - `PageTransition` wrapper
 
 **File yang dibuat:**
 ```
 src/
-  data/
-    modules.ts               ← Master data semua modul
-    topics/
-      percabangan.ts         ← 5 topik percabangan
-      perulangan.ts          ← 5 topik perulangan
-      struktur-data.ts       ← 5 topik struktur data
-  types/
-    module.ts                ← TypeScript types
-  app/
-    learn/[moduleId]/
-      page.tsx               ← Update dengan data nyata
-  components/
-    learn/
-      TopicSidebar.tsx
-      MaterialPanel.tsx
-      CodeEditorPanel.tsx
-```
-
-**Struktur Data TypeScript:**
-```typescript
-// types/module.ts
-export interface Topic {
-  id: string
-  title: string
-  description: string
-  explanation: string        // HTML atau markdown
-  starterCode: string        // Kode C++ untuk editor
-  solutionCode: string       // Kode C++ contoh lengkap
-  learningObjectives: string[]
-}
-
-export interface Module {
-  id: string
-  title: string
-  description: string
-  icon: string               // emoji atau icon name
-  topics: Topic[]
-}
+  components/ui/
+    Button.tsx
+    Card.tsx
+    Badge.tsx
+    Input.tsx
+    Modal.tsx
+    Tooltip.tsx
+    ProgressBar.tsx
+    Skeleton.tsx
+    Avatar.tsx
+  components/layout/
+    Navbar.tsx
+    Sidebar.tsx (untuk admin)
+    PageTransition.tsx
+  styles/globals.css          ← Design tokens lengkap
+  lib/utils.ts                ← cn() helper dan utility functions
 ```
 
 **Kriteria selesai:**
-- [ ] Semua 15 topik punya konten lengkap
-- [ ] Monaco Editor muncul dengan kode starter
-- [ ] Sidebar menampilkan daftar topik dan bisa diklik
-- [ ] Navigasi next/prev antar topik berfungsi
-- [ ] Tidak ada halaman yang crash karena data kosong
+- [ ] Semua komponen render tanpa error
+- [ ] Dark theme konsisten di semua komponen
+- [ ] Hover dan focus state sudah ada di semua interactive element
+- [ ] Komponen sudah bisa dipakai di halaman berikutnya
 
 ---
 
-### STEP 4 — Interpreter Engine (Core)
-**Durasi estimasi:** 3–5 hari (step terberat)  
+### STEP 3 — Landing Page, Auth Pages & Dashboard
+**Durasi estimasi:** 1–2 hari
+**Output:** Semua halaman publik dan dashboard siswa tampil dengan desain final
+
+**Yang dikerjakan:**
+
+**Landing Page (/):**
+- Navbar minimal (Logo + Login + CTA)
+- Hero section: judul besar, subtitle, 2 CTA button, atmospheric glow background
+- Feature section: 6 fitur dalam grid card
+- Modul section: 3 modul card
+- Footer minimal
+
+**Auth Pages:**
+- Login: card centered, form clean, link ke register
+- Register: card centered, form (nama, email, password), link ke login
+
+**Dashboard (/dashboard):**
+- Greeting + tanggal
+- 3 stat cards (topik selesai, streak, total skor)
+- Grid 3 modul dengan progress bar per modul
+- Quick action button ke topik terakhir yang dikerjakan
+
+**File yang dibuat:**
+```
+src/
+  app/page.tsx
+  app/auth/login/page.tsx     ← Update dengan desain final
+  app/auth/register/page.tsx  ← Update dengan desain final
+  app/dashboard/page.tsx
+  components/sections/
+    HeroSection.tsx
+    FeatureSection.tsx
+    ModuleSection.tsx
+  components/dashboard/
+    StatCard.tsx
+    ModuleProgressCard.tsx
+```
+
+**Kriteria selesai:**
+- [ ] Landing page terlihat premium dan minimalis
+- [ ] Auth pages clean dan user-friendly
+- [ ] Dashboard menampilkan data real dari Supabase (progress user)
+- [ ] Responsive di desktop dan tablet (768px+)
+- [ ] Semua transisi halaman smooth
+
+---
+
+### STEP 4 — Halaman Learn & Visualizer Shell
+**Durasi estimasi:** 1–2 hari
+**Output:** Halaman learn dengan layout split siap, Monaco Editor terpasang, unlock system berfungsi
+
+**Yang dikerjakan:**
+- Halaman `/learn/[moduleId]`: daftar topik dengan status (locked/unlocked/completed)
+- Halaman `/learn/[moduleId]/[topicId]`: layout split
+  - Kiri: Monaco Editor (60% width)
+  - Kanan: Visualizer panel (placeholder) + Variable Tracker (placeholder)
+  - Bawah editor: Tombol [Run] + [?] (info materi) + [Quiz] (setelah visualize)
+  - Tombol [?] membuka Modal dengan materi dasar dari Supabase
+- Fetch konten: starter code dan materi dari Supabase (tabel topics + materials)
+- Unlock system: cek progress user sebelum render topik
+- Navigasi antar topik (prev/next)
+- Loading skeleton saat fetch data
+
+**File yang dibuat:**
+```
+src/
+  app/learn/
+    [moduleId]/
+      page.tsx               ← Daftar topik + status
+      [topicId]/
+        page.tsx             ← Shell visualizer
+  components/learn/
+    TopicList.tsx            ← Daftar topik dengan lock indicator
+    TopicCard.tsx
+    VisualizerShell.tsx      ← Layout wrapper
+    MaterialModal.tsx        ← Modal tombol ?
+  hooks/
+    useTopicProgress.ts      ← Hook untuk cek unlock status
+```
+
+**Kriteria selesai:**
+- [ ] Daftar topik menampilkan status locked/unlocked/completed
+- [ ] Topik pertama setiap modul selalu unlocked
+- [ ] Topik terkunci tidak bisa diakses (redirect ke topik sebelumnya)
+- [ ] Monaco Editor muncul dengan starter code dari Supabase
+- [ ] Tombol [?] membuka modal dengan materi dasar
+- [ ] Navigasi prev/next topik berfungsi
+
+---
+
+### STEP 5 — Interpreter Engine (Core)
+**Durasi estimasi:** 3–5 hari (step terberat)
 **Output:** Kode C++ bisa dieksekusi dan menghasilkan execution trace yang akurat
 
 **Yang dikerjakan:**
 - Setup dan inisialisasi tree-sitter-c (WebAssembly)
 - Build parser: kode C++ string → AST
 - Build evaluator JavaScript: AST → Execution Trace[]
-- Evaluator harus support:
-  - Deklarasi variabel (int, float, double, char, bool, string)
-  - Assignment dan operator aritmatika (+, -, *, /, %)
-  - Operator perbandingan (==, !=, <, >, <=, >=)
-  - Operator logika (&&, ||, !)
+- Support:
+  - Tipe data: int, float, double, char, bool, string
+  - Operator: aritmatika, perbandingan, logika
   - Percabangan: if, if-else, else-if, nested if, switch-case
   - Perulangan: for, while, do-while, nested loop, break, continue
   - Array satu dimensi
   - Stack dan Queue (simulasi manual)
-  - `cout` output
-- Error handling: syntax error, runtime error (infinite loop guard)
-- Unit test evaluator dengan kode C++ sederhana
+  - cout output
+- Error handling: syntax error, runtime error, infinite loop guard (max 1000 steps)
+- Unit tests untuk semua node types
 
 **File yang dibuat:**
 ```
-src/
-  lib/
-    interpreter/
-      index.ts               ← Entry point, export utama
-      parser.ts              ← Wrapper tree-sitter-c
-      evaluator.ts           ← Core evaluator (terbesar)
-      types.ts               ← Types untuk ExecutionTrace, Step, dll
-      utils.ts               ← Helper functions
-      builtins.ts            ← Simulasi cout, stack, queue
-  __tests__/
-    interpreter/
-      evaluator.test.ts      ← Unit tests
+src/lib/interpreter/
+  index.ts
+  parser.ts
+  evaluator.ts
+  builtins.ts
+  types.ts
+  utils.ts
+src/__tests__/interpreter/
+  evaluator.test.ts
 ```
 
 **Format Execution Trace:**
 ```typescript
-// lib/interpreter/types.ts
-export interface Variable {
-  name: string
-  value: any
-  type: string              // "int" | "float" | "bool" | "string" | ...
-  changed: boolean          // true jika berubah di step ini
-}
-
-export interface ExecutionStep {
+interface ExecutionStep {
   stepIndex: number
-  lineNumber: number        // baris mana yang aktif
-  variables: Variable[]    // semua variabel beserta nilainya
-  output: string[]          // output cout sampai step ini
-  explanation: string       // penjelasan langkah dalam bahasa Indonesia
-  scopeDepth: number        // kedalaman scope (untuk indent visual)
+  lineNumber: number
+  variables: {
+    name: string
+    value: any
+    type: string
+    changed: boolean
+    scope: string
+  }[]
+  output: string[]
+  explanation: string
+  scopeDepth: number
 }
 
-export interface ExecutionTrace {
+interface ExecutionTrace {
   steps: ExecutionStep[]
   totalSteps: number
   hasError: boolean
@@ -485,135 +581,203 @@ export interface ExecutionTrace {
 ```
 
 **Kriteria selesai:**
-- [ ] Kode `int main(){ int x = 5; if(x > 3){ cout << "yes"; } }` menghasilkan trace yang benar
-- [ ] For loop sederhana menghasilkan trace per iterasi
-- [ ] Nested loop menghasilkan trace yang benar untuk setiap iterasi
-- [ ] Infinite loop terhenti dengan error message setelah 1000 langkah
-- [ ] Syntax error menghasilkan pesan error yang jelas
+- [ ] `int x = 5; if(x > 3){ cout << "yes"; }` → trace benar
+- [ ] For loop sederhana → trace per iterasi
+- [ ] Nested loop → trace benar untuk setiap level
+- [ ] Infinite loop → error setelah 1000 steps
+- [ ] Syntax error → pesan error yang jelas
 - [ ] Semua unit test pass
 
 ---
 
-### STEP 5 — Visualizer UI
-**Durasi estimasi:** 2–3 hari  
+### STEP 6 — Visualizer UI
+**Durasi estimasi:** 2–3 hari
 **Output:** Visualizer lengkap terhubung dengan interpreter engine
 
 **Yang dikerjakan:**
-- `CodeHighlighter`: Monaco Editor yang menampilkan highlight baris aktif
-- `VariableTracker`: Panel yang menampilkan semua variabel + animasi saat nilai berubah
+- `CodeHighlighter`: Monaco Editor dengan highlight baris aktif (decoration API)
+- `VariableTracker`: Panel variabel dengan animasi flash saat nilai berubah
 - `OutputConsole`: Panel output cout
-- `ExplanationPanel`: Teks penjelasan langkah saat ini
-- `StepIndicator`: Indikator step ke-N dari total
-- Integrasi semua komponen dalam halaman `/learn/[moduleId]`
-- Tombol "Run" untuk menjalankan interpreter dan menghasilkan trace
-- State management: `currentStep`, `executionTrace`, `isRunning`
-
-**File yang dibuat:**
-```
-src/
-  components/
-    visualizer/
-      CodeHighlighter.tsx    ← Monaco + line highlight
-      VariableTracker.tsx    ← Panel variabel
-      OutputConsole.tsx      ← Panel cout output
-      ExplanationPanel.tsx   ← Penjelasan langkah
-      StepIndicator.tsx      ← Step counter
-      VisualizerShell.tsx    ← Wrapper semua komponen
-  hooks/
-    useInterpreter.ts        ← Custom hook untuk interpreter state
-```
-
-**State di useInterpreter:**
-```typescript
-// hooks/useInterpreter.ts
-interface InterpreterState {
-  trace: ExecutionTrace | null
-  currentStep: number
-  isRunning: boolean
-  isPlaying: boolean
-  speed: number             // ms per step saat auto-play
-  error: string | null
-}
-```
-
-**Kriteria selesai:**
-- [ ] Tekan "Run" → Monaco Editor highlight baris pertama
-- [ ] Variable Tracker menampilkan semua variabel
-- [ ] Variabel yang baru berubah muncul dengan highlight berbeda (flash animasi)
-- [ ] Output console menampilkan hasil cout bertahap
-- [ ] Penjelasan langkah muncul di panel bawah
-- [ ] StepIndicator menunjukkan "Step 3 / 24"
-
----
-
-### STEP 6 — Animation Controls & Polish
-**Durasi estimasi:** 1–2 hari  
-**Output:** Kontrol animasi lengkap, UI polished, siap presentasi
-
-**Yang dikerjakan:**
-- `AnimationControls` component:
-  - Tombol: ⏮ (first) | ◀ (prev) | ▶/⏸ (play/pause) | ▶ (next) | ⏭ (last)
+- `ExplanationPanel`: Penjelasan langkah dalam bahasa Indonesia
+- `StepIndicator`: "Step 3 / 24"
+- `AnimationControls`:
+  - Tombol: ⏮ first | ◀ prev | ▶/⏸ play/pause | ▶ next | ⏭ last
   - Speed slider: 0.5x, 1x, 2x, 3x
-  - Keyboard shortcuts: Arrow keys, Space untuk play/pause
-- Auto-play mode: step berjalan otomatis sesuai speed
-- Animasi variabel berubah (flash neon saat value change)
-- Pixel sound effects (opsional, toggle on/off)
-- Loading state saat interpreter parsing
-- Error state dengan pesan yang jelas
-- Responsive fine-tuning (tablet 768px)
-- Review semua halaman: konsistensi warna, font, spacing
+  - Keyboard shortcuts: ArrowLeft, ArrowRight, Space
+- `useInterpreter` hook: state management lengkap
+- Auto-play mode dengan interval
+
+**File yang dibuat:**
+```
+src/components/visualizer/
+  CodeHighlighter.tsx
+  VariableTracker.tsx
+  OutputConsole.tsx
+  ExplanationPanel.tsx
+  StepIndicator.tsx
+  AnimationControls.tsx
+  VisualizerPanel.tsx       ← Wrapper semua komponen visualizer
+src/hooks/
+  useInterpreter.ts
+  useKeyboardShortcuts.ts
+```
+
+**Kriteria selesai:**
+- [ ] Run → highlight baris pertama langsung
+- [ ] Variable Tracker menampilkan semua variabel
+- [ ] Variabel yang berubah muncul dengan subtle flash animation
+- [ ] Auto-play berjalan dan berhenti di step terakhir
+- [ ] Speed slider berfungsi
+- [ ] Keyboard shortcuts: Arrow keys dan Space
+- [ ] Output console menampilkan cout bertahap
+
+---
+
+### STEP 7 — Sistem Quiz & Progress Tracking
+**Durasi estimasi:** 2 hari
+**Output:** Quiz berfungsi, progress tersimpan, unlock system aktif
+
+**Yang dikerjakan:**
+- Halaman Quiz: fetch soal dari Supabase (tabel questions + question_options)
+- Tampilkan 5 soal pilihan ganda satu per satu
+- Hitung skor setelah selesai
+- Simpan hasil ke tabel quiz_attempts
+- Jika skor ≥ 70%: update user_progress topik jadi 'completed', unlock topik berikutnya
+- Jika skor < 70%: tampilkan retry button
+- Update dashboard: progress bar per modul dihitung dari user_progress
+- Hasil quiz: tampilkan skor, jawaban benar/salah, dan tombol lanjut/retry
 
 **File yang dibuat:**
 ```
 src/
-  components/
-    visualizer/
-      AnimationControls.tsx
-    ui/
-      PixelSlider.tsx
-      PixelTooltip.tsx
+  app/learn/[moduleId]/[topicId]/quiz/page.tsx
+  components/quiz/
+    QuizQuestion.tsx
+    QuizProgress.tsx
+    QuizResult.tsx
   hooks/
-    useKeyboardShortcuts.ts
+    useQuiz.ts
+    useProgress.ts
+  lib/
+    progress.ts             ← Helper functions untuk progress
 ```
 
 **Kriteria selesai:**
-- [ ] Auto-play berjalan dan berhenti otomatis di step terakhir
-- [ ] Speed slider mengubah kecepatan auto-play
-- [ ] Keyboard shortcuts berfungsi (ArrowLeft/Right, Space)
-- [ ] Animasi flash pada variabel yang berubah nilai
-- [ ] Semua halaman konsisten pixel art theme
-- [ ] Tidak ada layout yang "pecah" di 768px
+- [ ] Quiz memuat soal dari Supabase
+- [ ] 5 soal tampil satu per satu dengan pilihan A/B/C/D
+- [ ] Skor dihitung benar setelah semua soal dijawab
+- [ ] Skor ≥ 70% → topik completed, unlock topik berikutnya
+- [ ] Skor < 70% → retry tersedia
+- [ ] Progress bar di dashboard terupdate setelah quiz selesai
+- [ ] Riwayat quiz_attempts tersimpan di Supabase
 
 ---
 
-### STEP 7 — Integrasi Final & Deploy
-**Durasi estimasi:** 1 hari  
-**Output:** LgoViz live di internet, siap presentasi
+### STEP 8 — Admin Panel
+**Durasi estimasi:** 2–3 hari
+**Output:** Admin bisa kelola semua konten via web interface
 
 **Yang dikerjakan:**
-- End-to-end testing semua flow
-- Bug fixing dari testing
-- Optimasi performance (lazy loading, dynamic import)
-- SEO metadata di setiap halaman
-- README.md project
-- Deploy ke Vercel
-- Custom domain (opsional)
-- Screenshot/video demo untuk portofolio
+
+**Layout Admin:**
+- Sidebar navigasi admin (berbeda dari sidebar siswa)
+- Header dengan info akun admin
+
+**Halaman Admin:**
+
+`/admin` — Dashboard Overview:
+- Total siswa terdaftar
+- Total quiz attempts hari ini
+- Topik yang paling sering diulang (retry tinggi)
+- Grafik sederhana progress siswa
+
+`/admin/questions` — Kelola Soal:
+- Tabel semua soal dengan filter per modul/topik
+- Tombol tambah, edit, hapus per soal
+- Status aktif/nonaktif soal
+
+`/admin/questions/new` dan `/admin/questions/[id]`:
+- Form soal: teks pertanyaan, 4 pilihan (A/B/C/D), pilih jawaban benar
+- Assign ke topik mana
+- Preview tampilan soal
+
+`/admin/materials` — Kelola Materi:
+- List semua topik
+- Edit teks materi dasar per topik (textarea atau rich text sederhana)
+- Edit starter code C++ per topik
+- Edit solution code C++ per topik
+
+`/admin/students` — Data Siswa:
+- Tabel semua siswa (nama, email, tanggal daftar, total topik selesai)
+- Filter dan search
+- Klik siswa → detail progress per topik
+
+`/admin/students/[id]`:
+- Info profil siswa
+- Progress detail: tabel semua topik + status + skor quiz terakhir
+- Riwayat quiz attempts
 
 **File yang dibuat:**
+```
+src/
+  app/admin/
+    page.tsx
+    questions/page.tsx
+    questions/new/page.tsx
+    questions/[id]/page.tsx
+    materials/page.tsx
+    students/page.tsx
+    students/[id]/page.tsx
+    layout.tsx              ← Layout khusus admin dengan sidebar
+  components/admin/
+    AdminSidebar.tsx
+    QuestionForm.tsx
+    MaterialEditor.tsx
+    StudentTable.tsx
+    StatsCard.tsx
+    SimpleChart.tsx
+```
+
+**Kriteria selesai:**
+- [ ] Akses /admin/* sebagai student → redirect ke /dashboard
+- [ ] Admin bisa tambah soal baru dengan 4 pilihan dan jawaban benar
+- [ ] Admin bisa edit dan hapus soal
+- [ ] Admin bisa edit materi per topik dan langsung tersimpan ke Supabase
+- [ ] Admin bisa lihat daftar semua siswa
+- [ ] Admin bisa lihat detail progress satu siswa
+- [ ] Dashboard admin menampilkan statistik yang akurat
+
+---
+
+### STEP 9 — Integrasi Final, Polish & Deploy
+**Durasi estimasi:** 1–2 hari
+**Output:** LgoViz live di Vercel, siap presentasi
+
+**Yang dikerjakan:**
+- End-to-end testing semua user flow (student + admin)
+- Bug fixing
+- Loading state dan error state di semua halaman
+- Empty state yang informative (belum ada data)
+- Optimasi: dynamic import, lazy loading, image optimization
+- SEO metadata di semua halaman
+- README.md lengkap
+- Deploy ke Vercel + set environment variables
+- Test di production (Chrome + Firefox)
+
+**File yang dibuat/diupdate:**
 ```
 README.md
 .env.example
-docs/
-  progress/               ← Semua summary step ada di sini
+docs/progress/          ← Semua summary step
 ```
 
 **Kriteria selesai:**
+- [ ] Semua user flow berjalan end-to-end tanpa error
+- [ ] Loading state ada di semua halaman yang fetch data
+- [ ] Error state yang informatif (bukan blank page)
 - [ ] App live di Vercel
-- [ ] Register → Login → Pilih modul → Jalankan visualizer → semua jalan
+- [ ] README menjelaskan cara setup dan run project
 - [ ] Tidak ada console error di production
-- [ ] README menjelaskan cara setup project
-- [ ] Link deploy sudah jalan di Chrome dan Firefox
 
 ---
 
@@ -622,88 +786,118 @@ docs/
 ```
 lgovic/
 ├── src/
-│   ├── app/                          ← Next.js App Router
+│   ├── app/
 │   │   ├── layout.tsx
-│   │   ├── page.tsx                  ← Landing page
+│   │   ├── page.tsx                        ← Landing page
 │   │   ├── auth/
 │   │   │   ├── login/page.tsx
 │   │   │   └── register/page.tsx
-│   │   ├── dashboard/
-│   │   │   └── page.tsx
-│   │   └── learn/
-│   │       └── [moduleId]/
-│   │           └── page.tsx
+│   │   ├── dashboard/page.tsx
+│   │   ├── learn/
+│   │   │   └── [moduleId]/
+│   │   │       ├── page.tsx                ← Daftar topik
+│   │   │       └── [topicId]/
+│   │   │           ├── page.tsx            ← Visualizer
+│   │   │           └── quiz/page.tsx       ← Quiz
+│   │   └── admin/
+│   │       ├── layout.tsx                  ← Admin layout
+│   │       ├── page.tsx                    ← Admin dashboard
+│   │       ├── questions/
+│   │       │   ├── page.tsx
+│   │       │   ├── new/page.tsx
+│   │       │   └── [id]/page.tsx
+│   │       ├── materials/page.tsx
+│   │       └── students/
+│   │           ├── page.tsx
+│   │           └── [id]/page.tsx
 │   │
 │   ├── components/
-│   │   ├── ui/                       ← Pixel UI library
-│   │   │   ├── PixelButton.tsx
-│   │   │   ├── PixelCard.tsx
-│   │   │   ├── PixelBadge.tsx
-│   │   │   ├── PixelSlider.tsx
-│   │   │   ├── PixelTooltip.tsx
-│   │   │   └── ScanlineOverlay.tsx
+│   │   ├── ui/                             ← Design system
+│   │   │   ├── Button.tsx
+│   │   │   ├── Card.tsx
+│   │   │   ├── Badge.tsx
+│   │   │   ├── Input.tsx
+│   │   │   ├── Modal.tsx
+│   │   │   ├── Tooltip.tsx
+│   │   │   ├── ProgressBar.tsx
+│   │   │   ├── Skeleton.tsx
+│   │   │   └── Avatar.tsx
 │   │   ├── layout/
 │   │   │   ├── Navbar.tsx
-│   │   │   └── Footer.tsx
-│   │   ├── sections/                 ← Landing page sections
+│   │   │   ├── Sidebar.tsx
+│   │   │   └── PageTransition.tsx
+│   │   ├── sections/                       ← Landing page
 │   │   │   ├── HeroSection.tsx
 │   │   │   ├── FeatureSection.tsx
-│   │   │   └── ModuleGrid.tsx
-│   │   ├── learn/                    ← Halaman materi
-│   │   │   ├── TopicSidebar.tsx
-│   │   │   ├── MaterialPanel.tsx
-│   │   │   └── CodeEditorPanel.tsx
-│   │   └── visualizer/               ← Inti visualizer
-│   │       ├── VisualizerShell.tsx
-│   │       ├── CodeHighlighter.tsx
-│   │       ├── VariableTracker.tsx
-│   │       ├── OutputConsole.tsx
-│   │       ├── ExplanationPanel.tsx
-│   │       ├── StepIndicator.tsx
-│   │       └── AnimationControls.tsx
+│   │   │   └── ModuleSection.tsx
+│   │   ├── dashboard/
+│   │   │   ├── StatCard.tsx
+│   │   │   └── ModuleProgressCard.tsx
+│   │   ├── learn/
+│   │   │   ├── TopicList.tsx
+│   │   │   ├── TopicCard.tsx
+│   │   │   ├── VisualizerShell.tsx
+│   │   │   └── MaterialModal.tsx
+│   │   ├── visualizer/
+│   │   │   ├── VisualizerPanel.tsx
+│   │   │   ├── CodeHighlighter.tsx
+│   │   │   ├── VariableTracker.tsx
+│   │   │   ├── OutputConsole.tsx
+│   │   │   ├── ExplanationPanel.tsx
+│   │   │   ├── StepIndicator.tsx
+│   │   │   └── AnimationControls.tsx
+│   │   ├── quiz/
+│   │   │   ├── QuizQuestion.tsx
+│   │   │   ├── QuizProgress.tsx
+│   │   │   └── QuizResult.tsx
+│   │   └── admin/
+│   │       ├── AdminSidebar.tsx
+│   │       ├── QuestionForm.tsx
+│   │       ├── MaterialEditor.tsx
+│   │       ├── StudentTable.tsx
+│   │       └── StatsCard.tsx
 │   │
-│   ├── data/                         ← Konten hardcode
-│   │   ├── modules.ts                ← Master list modul
-│   │   └── topics/
-│   │       ├── percabangan.ts
-│   │       ├── perulangan.ts
-│   │       └── struktur-data.ts
+│   ├── hooks/
+│   │   ├── useInterpreter.ts
+│   │   ├── useKeyboardShortcuts.ts
+│   │   ├── useQuiz.ts
+│   │   ├── useProgress.ts
+│   │   └── useTopicProgress.ts
 │   │
 │   ├── lib/
 │   │   ├── supabase/
 │   │   │   ├── client.ts
 │   │   │   └── server.ts
-│   │   └── interpreter/
-│   │       ├── index.ts
-│   │       ├── parser.ts
-│   │       ├── evaluator.ts
-│   │       ├── builtins.ts
-│   │       ├── utils.ts
-│   │       └── types.ts
-│   │
-│   ├── hooks/
-│   │   ├── useInterpreter.ts
-│   │   └── useKeyboardShortcuts.ts
+│   │   ├── interpreter/
+│   │   │   ├── index.ts
+│   │   │   ├── parser.ts
+│   │   │   ├── evaluator.ts
+│   │   │   ├── builtins.ts
+│   │   │   ├── types.ts
+│   │   │   └── utils.ts
+│   │   ├── progress.ts
+│   │   └── utils.ts
 │   │
 │   ├── types/
-│   │   └── module.ts
+│   │   ├── database.ts                     ← Supabase generated types
+│   │   └── app.ts                          ← Custom types
 │   │
 │   ├── styles/
 │   │   └── globals.css
 │   │
 │   └── middleware.ts
 │
+├── supabase/
+│   ├── schema.sql                          ← DDL semua tabel
+│   ├── seed.sql                            ← Data awal
+│   └── rls.sql                             ← RLS policies
+│
 ├── docs/
 │   └── progress/
 │       ├── step-1-summary.md
-│       ├── step-2-summary.md
 │       └── ...
 │
-├── public/
-│   ├── fonts/
-│   └── images/
-│
-├── .env.local                        ← Supabase keys (jangan di-commit)
+├── .env.local
 ├── .env.example
 ├── next.config.ts
 ├── tailwind.config.ts
@@ -716,21 +910,192 @@ lgovic/
 
 ## 6. SKEMA DATABASE SUPABASE
 
-Untuk versi ini, Supabase hanya dipakai untuk **autentikasi**. Tidak ada tabel tambahan yang diperlukan karena konten hardcode di frontend.
+```sql
+-- =============================================
+-- TABEL UTAMA
+-- =============================================
 
-Supabase Auth secara otomatis membuat tabel `auth.users`. Tidak perlu konfigurasi database tambahan untuk MVP ini.
+-- Profiles (extend auth.users)
+CREATE TABLE profiles (
+  id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
+  full_name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  role TEXT NOT NULL DEFAULT 'student' CHECK (role IN ('student', 'admin')),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Modules
+CREATE TABLE modules (
+  id TEXT PRIMARY KEY,              -- 'percabangan', 'perulangan', 'struktur-data'
+  title TEXT NOT NULL,
+  description TEXT,
+  order_index INTEGER NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Topics
+CREATE TABLE topics (
+  id TEXT PRIMARY KEY,              -- 'if', 'if-else', 'for', dll
+  module_id TEXT REFERENCES modules(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  description TEXT,
+  order_index INTEGER NOT NULL,
+  starter_code TEXT,                -- Kode C++ default di editor
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Materials (konten materi dasar per topik, editable admin)
+CREATE TABLE materials (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  topic_id TEXT REFERENCES topics(id) ON DELETE CASCADE UNIQUE,
+  content TEXT NOT NULL,            -- HTML atau teks penjelasan dasar
+  solution_code TEXT,               -- Kode contoh solusi
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_by UUID REFERENCES auth.users(id)
+);
+
+-- Questions (soal quiz)
+CREATE TABLE questions (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  topic_id TEXT REFERENCES topics(id) ON DELETE CASCADE,
+  question_text TEXT NOT NULL,
+  order_index INTEGER DEFAULT 0,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  created_by UUID REFERENCES auth.users(id)
+);
+
+-- Question Options (pilihan jawaban)
+CREATE TABLE question_options (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  question_id UUID REFERENCES questions(id) ON DELETE CASCADE,
+  option_label TEXT NOT NULL CHECK (option_label IN ('A', 'B', 'C', 'D')),
+  option_text TEXT NOT NULL,
+  is_correct BOOLEAN DEFAULT false
+);
+
+-- =============================================
+-- TABEL PROGRESS & TRACKING
+-- =============================================
+
+-- User Progress (per topik per user)
+CREATE TABLE user_progress (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  topic_id TEXT REFERENCES topics(id) ON DELETE CASCADE,
+  status TEXT NOT NULL DEFAULT 'locked'
+    CHECK (status IN ('locked', 'unlocked', 'completed')),
+  best_score INTEGER DEFAULT 0,       -- skor terbaik 0-100
+  completed_at TIMESTAMP WITH TIME ZONE,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(user_id, topic_id)
+);
+
+-- Quiz Attempts (riwayat pengerjaan quiz)
+CREATE TABLE quiz_attempts (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  topic_id TEXT REFERENCES topics(id) ON DELETE CASCADE,
+  score INTEGER NOT NULL,             -- skor 0-100
+  total_questions INTEGER NOT NULL,
+  correct_answers INTEGER NOT NULL,
+  passed BOOLEAN NOT NULL,            -- score >= 70
+  attempted_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- =============================================
+-- TRIGGER: Auto-create profile setelah register
+-- =============================================
+CREATE OR REPLACE FUNCTION handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO profiles (id, full_name, email, role)
+  VALUES (
+    NEW.id,
+    COALESCE(NEW.raw_user_meta_data->>'full_name', 'User'),
+    NEW.email,
+    'student'
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION handle_new_user();
+
+-- =============================================
+-- TRIGGER: Auto-unlock topik pertama tiap modul
+-- saat user baru terdaftar
+-- (dihandle di aplikasi saat pertama akses dashboard)
+-- =============================================
+```
+
+### RLS Policies (rls.sql)
 
 ```sql
--- Tidak ada tabel custom yang diperlukan untuk MVP.
--- Supabase Auth handle semuanya.
+-- Profiles
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can view own profile"
+  ON profiles FOR SELECT USING (auth.uid() = id);
+CREATE POLICY "Admin can view all profiles"
+  ON profiles FOR SELECT USING (
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+  );
 
--- Jika di masa depan ingin track progress user:
--- CREATE TABLE user_progress (
---   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
---   user_id UUID REFERENCES auth.users(id),
---   topic_id TEXT NOT NULL,
---   completed_at TIMESTAMP DEFAULT NOW()
--- );
+-- Topics & Modules: semua authenticated user bisa read
+ALTER TABLE topics ENABLE ROW LEVEL SECURITY;
+ALTER TABLE modules ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Authenticated users can read modules"
+  ON modules FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Authenticated users can read topics"
+  ON topics FOR SELECT TO authenticated USING (true);
+
+-- Materials: authenticated bisa read, hanya admin yang write
+ALTER TABLE materials ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Authenticated users can read materials"
+  ON materials FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Admin can write materials"
+  ON materials FOR ALL USING (
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+  );
+
+-- Questions: authenticated bisa read (active only), admin bisa semua
+ALTER TABLE questions ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Authenticated users can read active questions"
+  ON questions FOR SELECT TO authenticated USING (is_active = true);
+CREATE POLICY "Admin can manage questions"
+  ON questions FOR ALL USING (
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+  );
+
+-- Question Options: sama seperti questions
+ALTER TABLE question_options ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Authenticated users can read question options"
+  ON question_options FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Admin can manage question options"
+  ON question_options FOR ALL USING (
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+  );
+
+-- User Progress: user hanya bisa lihat/edit miliknya sendiri
+ALTER TABLE user_progress ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can manage own progress"
+  ON user_progress FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Admin can view all progress"
+  ON user_progress FOR SELECT USING (
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+  );
+
+-- Quiz Attempts: user hanya bisa lihat miliknya
+ALTER TABLE quiz_attempts ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can manage own attempts"
+  ON quiz_attempts FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Admin can view all attempts"
+  ON quiz_attempts FOR SELECT USING (
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+  );
 ```
 
 ---
@@ -740,262 +1105,303 @@ Supabase Auth secara otomatis membuat tabel `auth.users`. Tidak perlu konfiguras
 ### Flow Kerja
 ```
 Input: string kode C++
-         │
-         ▼
-┌─────────────────┐
-│     PARSER      │
-│  (tree-sitter)  │
-│                 │
-│ "int x = 5;"   │
-│       ↓         │
-│  AST Node Tree  │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│    EVALUATOR    │
-│  (custom JS)    │
-│                 │
-│ Walk AST node   │
-│ by node, update │
-│ environment     │
-│ (variable store)│
-│ record each step│
-└────────┬────────┘
-         │
-         ▼
+    ↓
+PARSER (tree-sitter-c)
+    kode C++ → AST (Abstract Syntax Tree)
+    ↓
+EVALUATOR (custom JavaScript)
+    Walk AST node by node
+    Update environment (variable store)
+    Record setiap perubahan state ke execution trace
+    ↓
 Output: ExecutionTrace[]
-```
-
-### Evaluator — Node Types yang Harus Dihandle
-```
-Program → function_definition → compound_statement
-  ├── declaration (int x = 5)
-  ├── assignment_expression (x = x + 1)
-  ├── if_statement
-  │     ├── condition (expression)
-  │     ├── then_clause (compound_statement)
-  │     └── else_clause (optional)
-  ├── for_statement
-  │     ├── init (declaration/assignment)
-  │     ├── condition (expression)
-  │     ├── update (expression)
-  │     └── body (compound_statement)
-  ├── while_statement
-  ├── do_statement
-  ├── switch_statement
-  ├── break_statement
-  ├── continue_statement
-  └── expression_statement
-        └── call_expression (cout)
 ```
 
 ### Infinite Loop Guard
 ```typescript
 const MAX_STEPS = 1000
-let stepCount = 0
+// Di setiap iterasi: stepCount++; if (stepCount > MAX_STEPS) throw Error
+```
 
-// Di setiap iterasi loop:
-stepCount++
-if (stepCount > MAX_STEPS) {
-  throw new Error("Infinite loop terdeteksi: program melebihi 1000 langkah")
-}
+### Node Types yang Dihandle
+```
+declaration, assignment, if_statement, for_statement,
+while_statement, do_statement, switch_statement,
+break_statement, continue_statement, call_expression (cout),
+array_declarator, subscript_expression
 ```
 
 ---
 
-## 8. PANDUAN TEMA PIXEL ART
+## 8. SISTEM EVALUASI & PROGRESS
+
+### Flow Lengkap
+```
+User buka topik
+    ↓
+Cek user_progress untuk topik ini
+    - status 'locked' → redirect ke topik sebelumnya
+    - status 'unlocked' atau 'completed' → lanjut
+    ↓
+Halaman visualizer
+    - Load starter code dari Supabase (topics.starter_code)
+    - Tombol [?] → load materials dari Supabase (materials.content)
+    ↓
+User klik [Mulai Quiz]
+    ↓
+Halaman quiz
+    - Load 5 soal aktif untuk topik ini (random dari questions)
+    - Tampilkan satu per satu
+    ↓
+Selesai → hitung skor
+    ↓
+Simpan ke quiz_attempts
+    ↓
+Jika skor ≥ 70:
+    - Update user_progress topik ini → 'completed', best_score
+    - Update user_progress topik berikutnya → 'unlocked'
+    - Tampilkan hasil + tombol [Topik Berikutnya]
+Jika skor < 70:
+    - Simpan attempt (passed: false)
+    - Tampilkan hasil + breakdown jawaban + tombol [Coba Lagi]
+```
+
+### Unlock Logic
+```typescript
+// Topik pertama setiap modul: selalu 'unlocked' saat user baru daftar
+// (di-seed saat pertama kali user akses dashboard)
+
+// Setelah quiz passed:
+async function unlockNextTopic(userId: string, currentTopicId: string) {
+  const nextTopic = getNextTopicInModule(currentTopicId)
+  if (nextTopic) {
+    await supabase.from('user_progress').upsert({
+      user_id: userId,
+      topic_id: nextTopic.id,
+      status: 'unlocked'
+    })
+  }
+}
+```
+
+### Scoring
+```
+Skor = (correct_answers / total_questions) × 100
+Pass threshold: 70
+Contoh: 4/5 benar → skor 80 → PASSED
+        3/5 benar → skor 60 → FAILED, bisa retry
+```
+
+---
+
+## 9. PANDUAN DESAIN PREMIUM MINIMALIS
 
 ### CSS Variables (globals.css)
 ```css
 :root {
-  /* Warna Utama */
-  --bg-primary: #0a0a0f;
-  --bg-secondary: #0f0f1a;
-  --bg-panel: #13131f;
-  --bg-highlight: #1a1a2e;
+  /* Backgrounds */
+  --bg: #060608;
+  --bg-2: #0b0b10;
+  --bg-3: #10101a;
+  --surface: rgba(255,255,255,0.04);
+  --surface-2: rgba(255,255,255,0.07);
+  --surface-3: rgba(255,255,255,0.10);
 
-  /* Aksen Neon */
-  --neon-green: #00ff88;
-  --neon-blue: #00d4ff;
-  --neon-purple: #b44fff;
-  --neon-yellow: #ffdd00;
+  /* Borders */
+  --border: rgba(255,255,255,0.08);
+  --border-2: rgba(255,255,255,0.14);
+  --border-3: rgba(255,255,255,0.22);
 
-  /* Teks */
-  --text-primary: #e2e8f0;
-  --text-secondary: #94a3b8;
-  --text-muted: #475569;
-  --text-code: #00ff88;
+  /* Accents */
+  --green: #00e87a;
+  --green-dim: rgba(0,232,122,0.12);
+  --green-border: rgba(0,232,122,0.25);
+  --blue: #38bdf8;
+  --blue-dim: rgba(56,189,248,0.12);
+  --purple: #a78bfa;
+  --purple-dim: rgba(167,139,250,0.12);
 
-  /* Border */
-  --border-primary: #2d2d4e;
-  --border-accent: #00ff88;
+  /* Text */
+  --text: #f1f5f9;
+  --text-2: #94a3b8;
+  --text-3: #475569;
+  --text-4: #2d3748;
 
   /* Font */
-  --font-pixel: "Press Start 2P", monospace;
-  --font-mono: "VT323", "Courier New", monospace;
+  --font: 'Inter', sans-serif;
 }
 ```
 
-### Scanline Effect (CSS)
+### Atmospheric Glow (untuk hero dan section)
 ```css
-.scanline-overlay::after {
-  content: "";
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 2px,
-    rgba(0, 0, 0, 0.05) 2px,
-    rgba(0, 0, 0, 0.05) 4px
+/* Tambahkan sebagai pseudo element atau div absolute */
+.hero-glow {
+  position: absolute;
+  top: -150px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 600px;
+  height: 400px;
+  background: radial-gradient(
+    ellipse,
+    rgba(0,232,122,0.07) 0%,
+    transparent 70%
   );
   pointer-events: none;
-  z-index: 9999;
+  filter: blur(40px);
 }
 ```
 
-### Pixel Button Pattern
+### Button Patterns
 ```css
-.pixel-btn {
-  font-family: var(--font-pixel);
-  font-size: 10px;
-  padding: 12px 20px;
-  background: transparent;
-  color: var(--neon-green);
-  border: 2px solid var(--neon-green);
+/* Primary */
+.btn-primary {
+  background: var(--green);
+  color: #060608;
+  border: none;
+  border-radius: 7px;
+  font-weight: 500;
+  font-size: 13px;
+  padding: 10px 22px;
   cursor: pointer;
-  position: relative;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  transition: all 0.1s steps(1);  /* Pixel transition */
+  transition: opacity 0.15s;
 }
+.btn-primary:hover { opacity: 0.88; }
 
-.pixel-btn:hover {
-  background: var(--neon-green);
-  color: var(--bg-primary);
-  box-shadow: 4px 4px 0px var(--neon-green);
-  transform: translate(-2px, -2px);
+/* Ghost */
+.btn-ghost {
+  background: transparent;
+  color: var(--text-2);
+  border: 1px solid var(--border-2);
+  border-radius: 7px;
+  font-size: 13px;
+  padding: 10px 22px;
+  cursor: pointer;
+  transition: all 0.15s;
 }
-
-.pixel-btn:active {
-  transform: translate(0, 0);
-  box-shadow: none;
+.btn-ghost:hover {
+  color: var(--text);
+  border-color: var(--border-3);
+  background: var(--surface);
 }
 ```
 
-### CRT Glow Effect untuk Text
+### Card Pattern
 ```css
-.glow-text {
-  text-shadow:
-    0 0 10px var(--neon-green),
-    0 0 20px var(--neon-green),
-    0 0 40px var(--neon-green);
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  transition: all 0.2s ease;
 }
+.card:hover {
+  background: var(--surface-2);
+  border-color: var(--border-2);
+  transform: translateY(-1px);
+}
+```
+
+### Typography Scale
+```css
+h1 { font-size: 42px; font-weight: 500; letter-spacing: -0.5px; }
+h2 { font-size: 28px; font-weight: 500; letter-spacing: -0.3px; }
+h3 { font-size: 18px; font-weight: 500; letter-spacing: -0.2px; }
+p  { font-size: 15px; font-weight: 400; line-height: 1.7; color: var(--text-2); }
 ```
 
 ---
 
-## 9. TEMPLATE PROMPT PER STEP
+## 10. TEMPLATE PROMPT PER STEP
 
-Gunakan template ini setiap kali mulai step baru. Copy, isi bagian [BRACKET], kirim ke AI.
+Gunakan template ini setiap kali mulai step baru:
 
 ```
-=== LGOVIC PROJECT — STEP [NOMOR] ===
+=== LGOVIC PROJECT — STEP [NOMOR]: [NAMA STEP] ===
 
 ROLE:
 Kamu adalah senior fullstack developer yang spesialis membangun aplikasi web edukasi
-interaktif dengan Next.js 14+, TypeScript, Tailwind CSS, dan Supabase.
-Kamu paham konteks proyek LgoViz — media pembelajaran visualisasi algoritma C++ berbasis web
-bergaya pixel art untuk siswa SMK RPL.
+interaktif dengan Next.js 14+, TypeScript, Tailwind CSS v4, dan Supabase.
+Proyek: LgoViz — media pembelajaran visualisasi algoritma C++ untuk siswa SMK RPL.
+Desain: premium minimalis dark (seperti Linear / Vercel / Resend) — bukan pixel art.
 
 CONTEXT:
-Proyek: LgoViz (media pembelajaran visualisasi algoritma C++)
-Stack: Next.js 14 App Router + TypeScript + Tailwind + Supabase + Monaco Editor
-Tema: Pixel art / retro game (seperti Codedex.io)
-Status saat ini: [SALIN ISI DARI summary step sebelumnya]
+[SALIN ISI DARI summary step sebelumnya — file step-N-summary.md]
 
 CONSTRAINT:
 - Interpreter engine berjalan sepenuhnya client-side
-- Konten materi hardcode di /src/data/, bukan di Supabase
-- Supabase hanya untuk autentikasi
-- Styling: Tailwind CSS + CSS variables saja, tidak pakai UI library
+- Konten materi dan soal quiz disimpan di Supabase (bukan hardcode)
+- Supabase dipakai untuk: auth, semua data konten, progress, dan quiz
+- Role: 'student' dan 'admin' (cek dari tabel profiles)
+- RLS aktif di semua tabel Supabase
+- Styling: Tailwind CSS v4 + CSS variables saja, tidak pakai UI library
 - Monaco Editor pakai next/dynamic (SSR disabled)
 - TypeScript strict mode ON
-- Setiap komponen interaktif pakai "use client"
-- Warna: bg #0a0a0f, aksen #00ff88 dan #00d4ff
-- Font pixel: "Press Start 2P"
-- Di akhir step, buat file summary di /docs/progress/step-[N]-summary.md
+- Desain: Inter font, background #060608, accent #00e87a
+- Di akhir step, buat file /docs/progress/step-[N]-summary.md
 
 TASK (STEP [NOMOR] — [NAMA STEP]):
-[DESKRIPSI LENGKAP TASK DARI BAGIAN CHAINING DI ATAS]
+[DESKRIPSI LENGKAP TASK DARI BAGIAN 4 DI ATAS]
 
 Tolong:
-1. Buat semua file yang diperlukan dengan kode lengkap (bukan placeholder)
+1. Buat semua file yang diperlukan dengan kode lengkap (bukan placeholder/snippet)
 2. Jelaskan setiap keputusan teknis yang penting
-3. Jika ada hal yang tidak bisa diselesaikan, catat sebagai "⚠️ PENDING" beserta alasannya
+3. Jika ada hal yang tidak bisa diselesaikan, catat sebagai "PENDING" beserta alasannya
 4. Di akhir, buat isi summary.md untuk step ini
 ```
 
 ---
 
-## 10. TEMPLATE SUMMARY MD PER STEP
-
-Setelah selesai setiap step, buat file `/docs/progress/step-[N]-summary.md` dengan format ini:
+## 11. TEMPLATE SUMMARY MD PER STEP
 
 ```markdown
 # Step [N] Summary — [Nama Step]
 **Tanggal:** [tanggal]
-**Status:** ✅ Selesai / ⚠️ Selesai dengan catatan / ❌ Belum selesai
+**Status:** Selesai / Selesai dengan catatan / Belum selesai
 
 ## File yang Dibuat/Diubah
 - `src/...` — [deskripsi singkat]
-- `src/...` — [deskripsi singkat]
 
 ## Keputusan Teknis
-- [Keputusan 1]: [Alasan]
-- [Keputusan 2]: [Alasan]
+- [Keputusan]: [Alasan]
 
 ## Masalah yang Ditemukan & Solusi
 - **Masalah:** [deskripsi]
   **Solusi:** [deskripsi]
 
-## ⚠️ Deviasi dari Rencana (jika ada)
-- [Apa yang berubah dari blueprint]: [Alasan]
+## DEVIATION (jika ada)
+- [Perubahan dari blueprint]: [Alasan]
 
-## Dependencies yang Ditambahkan
-```bash
+## Dependencies Baru
 npm install [package]
-```
 
 ## Konteks untuk Step Berikutnya
-- [Hal penting yang perlu diketahui AI di step berikutnya]
-- [State/struktur yang sudah ada dan bisa langsung dipakai]
-- [File mana yang paling relevan untuk dilanjutkan]
+- [Yang sudah siap dan bisa langsung dipakai]
+- [File paling relevan untuk dilanjutkan]
+- [Hal yang perlu diperhatikan]
 
 ## Definition of Done — Checklist
-- [x] [Kriteria 1]
-- [x] [Kriteria 2]
-- [ ] [Kriteria yang belum selesai]
+- [x] [Kriteria selesai]
+- [ ] [Kriteria belum selesai]
 ```
 
 ---
 
-## 🚀 CARA PAKAI BLUEPRINT INI
+## CARA PAKAI BLUEPRINT INI
 
-1. **Baca blueprint ini setiap mulai sesi coding**
-2. **Mulai dari Step 1** — copy template prompt di bagian 9
-3. **Isi bagian [CONTEXT]** dengan summary step sebelumnya (kosong untuk step 1)
-4. **Kerjakan task** sesuai daftar di bagian 4
-5. **Buat summary** setelah selesai setiap step
-6. **Lanjut ke step berikutnya** dengan summary sebagai konteks
+1. Baca blueprint ini sebelum mulai setiap sesi coding
+2. Mulai dari Step 1 (atau step yang belum selesai)
+3. Copy template prompt di bagian 10
+4. Isi bagian CONTEXT dengan summary step sebelumnya
+5. Kerjakan semua kriteria di Definition of Done
+6. Buat summary setelah selesai
+7. Lanjut ke step berikutnya
 
-> 💡 **Tips:** Jika satu step terlalu besar, pecah jadi sub-step. Misal Step 4 (interpreter) bisa dipecah jadi Step 4a (parser) dan Step 4b (evaluator).
+> Catatan: Step 1-3 yang sudah selesai di v1 perlu di-rework karena ada perubahan
+> desain (dari pixel art ke premium minimalis) dan perubahan arsitektur
+> (konten sekarang di Supabase, bukan hardcode). Estimasi rework Step 1-3: 1-2 hari.
 
 ---
 
-*Dokumen ini dibuat sebagai master blueprint proyek LgoViz.*  
-*Update dokumen ini jika ada perubahan signifikan pada arah proyek.*
+*Blueprint LgoViz v2.0 — Revisi April 2026*
+*Perubahan dari v1.0: desain pivot, sistem evaluasi quiz, admin panel, unlock system, semua konten ke Supabase*

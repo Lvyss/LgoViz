@@ -2,14 +2,12 @@
 
 import { useState, useEffect, useRef } from 'react'
 import dynamic from 'next/dynamic'
-import PixelCard from '../ui/PixelCard'
-import PixelButton from '../ui/PixelButton'
 
 const MonacoEditor = dynamic(() => import('@monaco-editor/react'), {
   ssr: false,
   loading: () => (
-    <div className="bg-[#1e1e2e] border-2 border-neon-green/50 p-4 min-h-[300px] flex items-center justify-center">
-      <div className="font-mono text-sm text-gray-500">Loading editor...</div>
+    <div className="h-[400px] flex items-center justify-center bg-[#0a0a0f] border border-white/10 rounded-lg">
+      <span className="text-sm text-gray-500">Loading editor...</span>
     </div>
   ),
 })
@@ -21,6 +19,7 @@ interface CodeEditorPanelProps {
   onRun?: (code: string) => void
   isRunning?: boolean
   highlightedLine?: number
+  onShowMaterial?: () => void
 }
 
 export default function CodeEditorPanel({
@@ -30,6 +29,7 @@ export default function CodeEditorPanel({
   onRun,
   isRunning = false,
   highlightedLine = 0,
+  onShowMaterial,
 }: CodeEditorPanelProps) {
   const [code, setCode] = useState(starterCode)
   const [showSolution, setShowSolution] = useState(false)
@@ -40,73 +40,62 @@ export default function CodeEditorPanel({
   useEffect(() => {
     setCode(starterCode)
     setShowSolution(false)
-    // Reset highlight when code changes
     lastHighlightedLineRef.current = 0
   }, [starterCode])
 
-  // Clear all decorations
-  const clearDecorations = useRef(() => {
+  const clearDecorations = () => {
     if (editorRef.current && decorationRef.current.length > 0) {
       try {
         decorationRef.current = editorRef.current.deltaDecorations(decorationRef.current, [])
       } catch (e) {
-        console.warn('Failed to clear decorations:', e)
+        // silent
       }
     }
-  }).current
+  }
 
-  // Update Monaco editor decorations when highlightedLine changes
-// Di CodeEditorPanel.tsx, update useEffect untuk highlight:
-useEffect(() => {
-  if (!editorRef.current) return
+  useEffect(() => {
+    if (!editorRef.current) return
 
-  const timeoutId = setTimeout(() => {
-    if (lastHighlightedLineRef.current === highlightedLine) return
-    lastHighlightedLineRef.current = highlightedLine
+    const timeoutId = setTimeout(() => {
+      if (lastHighlightedLineRef.current === highlightedLine) return
+      lastHighlightedLineRef.current = highlightedLine
 
-    clearDecorations()
+      clearDecorations()
+      if (highlightedLine <= 0) return
 
-    // Don't highlight line 0
-    if (highlightedLine <= 0) return
+      const editor = editorRef.current
+      const model = editor.getModel()
+      if (!model) return
 
-    const editor = editorRef.current
-    const model = editor.getModel()
-    if (!model) return
+      const lineCount = model.getLineCount()
+      const targetLine = Math.min(Math.max(highlightedLine, 1), lineCount)
 
-    const lineCount = model.getLineCount()
-    // Ensure line number is within bounds
-    const targetLine = Math.min(Math.max(highlightedLine, 1), lineCount)
+      try {
+        decorationRef.current = editor.deltaDecorations([], [{
+          range: {
+            startLineNumber: targetLine,
+            startColumn: 1,
+            endLineNumber: targetLine,
+            endColumn: model.getLineMaxColumn(targetLine),
+          },
+          options: {
+            isWholeLine: true,
+            className: 'highlighted-line',
+            glyphMarginClassName: 'highlighted-line-glyph',
+          },
+        }])
+        editor.revealLineInCenterIfOutsideViewport(targetLine)
+      } catch (e) {
+        // silent
+      }
+    }, 50)
 
-    const newDecorations = [
-      {
-        range: {
-          startLineNumber: targetLine,
-          startColumn: 1,
-          endLineNumber: targetLine,
-          endColumn: model.getLineMaxColumn(targetLine),
-        },
-        options: {
-          isWholeLine: true,
-          className: 'highlighted-line',
-          glyphMarginClassName: 'highlighted-line-glyph',
-        },
-      },
-    ]
+    return () => clearTimeout(timeoutId)
+  }, [highlightedLine])
 
-    try {
-      decorationRef.current = editor.deltaDecorations([], newDecorations)
-      editor.revealLineInCenterIfOutsideViewport(targetLine)
-    } catch (e) {
-      console.warn('Failed to add decorations:', e)
-    }
-  }, 50)
-
-  return () => clearTimeout(timeoutId)
-}, [highlightedLine, clearDecorations])
   const handleEditorDidMount = (editor: any, monaco: any) => {
     editorRef.current = editor
-    
-    // Add CSS for highlighted line via Monaco's theme
+
     const styleId = 'monaco-highlight-styles'
     if (!document.getElementById(styleId)) {
       const style = document.createElement('style')
@@ -120,22 +109,12 @@ useEffect(() => {
           background-color: #10b981 !important;
           width: 6px !important;
           margin-left: 3px;
-          border-radius: 0px !important;
-        }
-        .highlighted-line-border {
-          background-color: #10b981 !important;
-          width: 4px !important;
-          margin-left: 0px;
-        }
-        .monaco-editor .view-overlays .current-line {
-          border: none !important;
         }
       `
       document.head.appendChild(style)
     }
 
-    // Set editor theme with custom colors
-    monaco.editor.defineTheme('custom-dark', {
+    monaco.editor.defineTheme('lgoviz-dark', {
       base: 'vs-dark',
       inherit: true,
       rules: [
@@ -151,24 +130,17 @@ useEffect(() => {
         'editorLineNumber.activeForeground': '#10b981',
       },
     })
-    monaco.editor.setTheme('custom-dark')
-
-    // Scroll to first line
-    editor.revealLine(1)
+    monaco.editor.setTheme('lgoviz-dark')
   }
 
-  // Clear decorations on unmount
   useEffect(() => {
-    return () => {
-      clearDecorations()
-    }
-  }, [clearDecorations])
+    return () => clearDecorations()
+  }, [])
 
   const handleCodeChange = (value: string | undefined) => {
     const newCode = value || ''
     setCode(newCode)
     onCodeChange?.(newCode)
-    // Reset highlight when user edits code
     lastHighlightedLineRef.current = 0
     clearDecorations()
   }
@@ -182,34 +154,66 @@ useEffect(() => {
       onCodeChange?.(solutionCode)
     }
     setShowSolution(!showSolution)
-    // Reset highlight
     lastHighlightedLineRef.current = 0
     clearDecorations()
   }
 
-  const handleRun = () => {
-    onRun?.(code)
-  }
-
   return (
-    <PixelCard glow>
-      <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
-        <h2 className="text-sm font-pixel text-neon-blue">✏️ CODE EDITOR</h2>
-        <div className="flex gap-2">
-          <PixelButton variant="secondary" onClick={handleShowSolution} className="text-[8px] py-1 px-3">
-            {showSolution ? '↺ RESET' : '💡 SHOW SOLUTION'}
-          </PixelButton>
-          <PixelButton variant="primary" onClick={handleRun} className="text-[8px] py-1 px-3" disabled={isRunning}>
-            {isRunning ? '⚡ RUNNING...' : '▶ RUN'}
-          </PixelButton>
+    <div className="flex flex-col h-full">
+      {/* Header Bar */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-white/5">
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-medium text-gray-400">Code Editor</span>
+          {highlightedLine > 0 && (
+            <span className="flex items-center gap-2 text-xs text-emerald-400">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              Line {highlightedLine}
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          {onShowMaterial && (
+            <button
+              onClick={onShowMaterial}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-400 transition-colors border border-white/10 rounded-lg hover:bg-white/5 hover:text-gray-300"
+              title="Lihat materi pembelajaran"
+            >
+              <span>?</span>
+              <span>Materi</span>
+            </button>
+          )}
+          <button
+            onClick={handleShowSolution}
+            className="px-3 py-1.5 text-xs font-medium text-gray-400 transition-colors border border-white/10 rounded-lg hover:bg-white/5 hover:text-gray-300"
+          >
+            {showSolution ? 'Reset' : 'Solusi'}
+          </button>
+          <button
+            onClick={() => onRun?.(code)}
+            disabled={isRunning}
+            className="flex items-center gap-2 px-4 py-1.5 text-sm font-medium text-white transition-all bg-emerald-600 rounded-lg hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isRunning ? (
+              <>
+                <span className="animate-spin">⟳</span>
+                <span>Running...</span>
+              </>
+            ) : (
+              <>
+                <span>▶</span>
+                <span>Run</span>
+              </>
+            )}
+          </button>
         </div>
       </div>
 
-      <div className="overflow-hidden border-2 border-neon-green/50">
+      {/* Monaco Editor */}
+      <div className="flex-1 overflow-hidden">
         <MonacoEditor
-          height="300px"
+          height="100%"
           defaultLanguage="cpp"
-          theme="custom-dark"
+          theme="lgoviz-dark"
           value={code}
           onChange={handleCodeChange}
           onMount={handleEditorDidMount}
@@ -219,21 +223,13 @@ useEffect(() => {
             lineNumbers: 'on',
             automaticLayout: true,
             scrollBeyondLastLine: false,
-            fontFamily: 'JetBrains Mono, Courier New, monospace',
+            fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
             renderLineHighlight: 'none',
             glyphMargin: true,
-            padding: { top: 8, bottom: 8 },
+            padding: { top: 12, bottom: 12 },
           }}
         />
       </div>
-
-      <div className="flex items-center justify-between mt-3 font-mono text-xs text-gray-500">
-        <span className="flex items-center gap-2">
-          <span className={`inline-block w-2 h-2 rounded-full ${highlightedLine > 0 ? 'bg-neon-green animate-pulse' : 'bg-gray-600'}`}></span>
-          <span>{highlightedLine > 0 ? `🎯 Line ${highlightedLine} active` : '⚡ Run code to see execution'}</span>
-        </span>
-        <span>C++ Interpreter</span>
-      </div>
-    </PixelCard>
+    </div>
   )
 }
