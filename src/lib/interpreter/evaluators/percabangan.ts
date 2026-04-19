@@ -227,63 +227,51 @@ export async function evaluatePercabangan(
   }
 
   // Helper: handle } else if / } else — pop lalu eval lalu push
-  const handleCloseThenBranch = (lineNum: number, isElseIf: boolean, condition?: string): boolean => {
-    // 1. Simpan state current (hasil IF/else-if sebelumnya)
-    const savedPendingElse = currentPendingElse
-    const savedBranchSelected = currentBranchSelected
+const handleCloseThenBranch = (lineNum: number, isElseIf: boolean, condition?: string): boolean => {
+  if (stateStack.length === 0) return false
 
-    // 2. Pop — ambil parentSkipMode
-    let parentSkipMode = currentSkipMode
-    if (stateStack.length > 0) {
-      const prev = stateStack.pop()!
-      parentSkipMode = prev.parentSkipMode
-      currentSkipMode = prev.parentSkipMode
-      currentPendingElse = prev.parentPendingElse
-      currentBranchSelected = prev.parentBranchSelected
-    }
+  const prev = stateStack.pop()!
+  const parentSkipMode = prev.parentSkipMode
+  const savedPendingElse = prev.ifPendingElse
+  const savedBranchSelected = prev.ifBranchSelected
 
-    // 3. Restore hasil IF untuk eval
-    currentPendingElse = savedPendingElse
-    currentBranchSelected = savedBranchSelected
+  // Restore parent state
+  currentSkipMode = prev.parentSkipMode
+  currentPendingElse = prev.parentPendingElse
+  currentBranchSelected = prev.parentBranchSelected
 
-    // 4. Eval branch
-    if (parentSkipMode) {
-      // outer skip — semua ikut skip
-      currentSkipMode = true
-      return false // tidak eksekusi
-    } else if (savedBranchSelected) {
-      // branch sudah dipilih sebelumnya — skip ini
-      currentSkipMode = true
-      currentBranchSelected = true  // jaga agar } else if berikutnya juga skip
-      currentPendingElse = false
-      return false
-    } else if (savedPendingElse) {
-      if (isElseIf && condition !== undefined) {
-        // eval kondisi else if
-        const condResult = evalCondition(condition)
-        console.log(`    Condition: "${condition}" → ${condResult ? 'TRUE ✅' : 'FALSE ❌'}`)
-        recordStep(lineNum, `🔀 ELSE IF: "${condition}" → ${condResult ? '✅ TRUE' : '❌ FALSE'}`)
-        if (condResult) {
-          currentSkipMode = false
-          currentBranchSelected = true
-          currentPendingElse = false
-          return true // eksekusi
-        } else {
-          currentSkipMode = true
-          currentBranchSelected = false
-          currentPendingElse = true // masih nunggu else berikutnya
-          return false
-        }
-      } else {
-        // else biasa
+  if (parentSkipMode) {
+    currentSkipMode = true
+    currentBranchSelected = false
+    currentPendingElse = false
+  } else if (savedBranchSelected) {
+    currentSkipMode = true
+    currentBranchSelected = true
+    currentPendingElse = false
+  } else if (savedPendingElse) {
+    if (isElseIf && condition !== undefined) {
+      const condResult = evalCondition(condition)
+      console.log(`    Condition: "${condition}" → ${condResult ? 'TRUE ✅' : 'FALSE ❌'}`)
+      recordStep(lineNum, `🔀 ELSE IF: "${condition}" → ${condResult ? '✅ TRUE' : '❌ FALSE'}`)
+      if (condResult) {
         currentSkipMode = false
         currentBranchSelected = true
         currentPendingElse = false
-        return true // eksekusi
+      } else {
+        currentSkipMode = true
+        currentBranchSelected = false
+        currentPendingElse = true
       }
+    } else {
+      currentSkipMode = false
+      currentBranchSelected = true
+      currentPendingElse = false
     }
-    return false
   }
+
+  // Return parentSkipMode supaya caller bisa pakai untuk push berikutnya
+  return parentSkipMode
+}
 
   let idx = 0
 
@@ -302,7 +290,7 @@ export async function evaluatePercabangan(
       idx++; continue
     }
 
-    // ── 2. CLOSE BRACE standalone ─────────────────────────────────
+// ── 2. CLOSE BRACE standalone ─────────────────────────────────
     if (line === '}') {
       console.log(`  → CLOSE BRACE: popBlock`)
       if (stateStack.length > 0) {
@@ -314,35 +302,52 @@ export async function evaluatePercabangan(
       idx++; continue
     }
 
-    // ── 3. "} else if (...) {" ────────────────────────────────────
-    // HARUS sebelum } else { karena lebih spesifik
-    const closeElseIfMatch = line.match(/^\}\s*else\s+if\s*\((.+)\)\s*\{?$/)
-    if (closeElseIfMatch) {
-      console.log(`  → TYPE: } ELSE IF {`)
-      const condition = closeElseIfMatch[1].trim()
-      const willExecute = handleCloseThenBranch(lineNum, true, condition)
+const closeElseIfMatch = line.match(/^\}\s*else\s+if\s*\((.+)\)\s*\{?$/)
+if (closeElseIfMatch) {
+  console.log(`  → TYPE: } ELSE IF {`)
+  const condition = closeElseIfMatch[1].trim()
+  const parentSkipMode = handleCloseThenBranch(lineNum, true, condition)
 
-      if (line.includes('{')) {
-        pushBlock()
-        updateStackIfState()
-      }
+  const branchSelectedNow = currentBranchSelected
+  const pendingElseNow = currentPendingElse
 
-      idx++; continue
-    }
+  if (line.includes('{')) {
+    stateStack.push({
+      parentSkipMode: parentSkipMode,  // ← pakai parentSkipMode dari sebelum chain
+      parentPendingElse: false,
+      parentBranchSelected: false,
+      ifPendingElse: pendingElseNow,
+      ifBranchSelected: branchSelectedNow,
+    })
+    currentPendingElse = false
+    currentBranchSelected = false
+  }
 
-    // ── 4. "} else {" atau "} else" ───────────────────────────────
-    if (line.match(/^\}\s*else(\s*\{.*)?$/)) {
-      console.log(`  → TYPE: } ELSE {`)
-      handleCloseThenBranch(lineNum, false)
+  idx++; continue
+}
 
-      if (line.includes('{')) {
-        pushBlock()
-        updateStackIfState()
-      }
+// ── 4. "} else {" ────────────────────────────────────────────
+if (line.match(/^\}\s*else(\s*\{.*)?$/)) {
+  console.log(`  → TYPE: } ELSE {`)
+  const parentSkipMode = handleCloseThenBranch(lineNum, false)
 
-      idx++; continue
-    }
+  const branchSelectedNow = currentBranchSelected
+  const pendingElseNow = currentPendingElse
 
+  if (line.includes('{')) {
+    stateStack.push({
+      parentSkipMode: parentSkipMode,  // ← sama
+      parentPendingElse: false,
+      parentBranchSelected: false,
+      ifPendingElse: pendingElseNow,
+      ifBranchSelected: branchSelectedNow,
+    })
+    currentPendingElse = false
+    currentBranchSelected = false
+  }
+
+  idx++; continue
+}
     // ── 5. IF ─────────────────────────────────────────────────────
     const ifMatch = line.match(/^if\s*\((.+)\)\s*\{?$/)
     if (ifMatch) {
