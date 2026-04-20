@@ -158,3 +158,163 @@ body {
     --radius-md: 10px;
   }
 }
+
+.stair-container {
+          display: grid;
+          grid-template-columns: repeat(9, 1fr);
+          gap: 0px;
+          align-items: flex-end;
+          position: absolute;
+          bottom: -5px;
+          left: 0;
+          right: 0;
+          width: 100%;
+          height: 100vh;
+          z-index: 5;
+          pointer-events: none;
+          background: linear-gradient(180deg, #000000 0%, #0a0a0a 85%, #121212 100%);
+        }
+
+        .stair-item {
+          position: relative;
+          background-color: #000;
+          width: 100%;
+          opacity: 0;
+          transform: translateY(60px);
+          animation: columnRise 1.6s cubic-bezier(0.2, 0.9, 0.4, 1.1) forwards;
+        }
+
+        .stair-1 { animation-delay: 0s; }
+        .stair-2 { animation-delay: 0.05s; }
+        .stair-3 { animation-delay: 0.1s; }
+        .stair-4 { animation-delay: 0.15s; }
+        .stair-5 { animation-delay: 0.25s; }
+        .stair-6 { animation-delay: 0.15s; }
+        .stair-7 { animation-delay: 0.1s; }
+        .stair-8 { animation-delay: 0.05s; }
+        .stair-9 { animation-delay: 0s; }
+
+        @keyframes columnRise {
+          0% {
+            opacity: 0;
+            transform: translateY(80px);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .molten-line {
+          position: absolute;
+          top: 0; left: 0; right: 0;
+          height: 3px;
+          background: linear-gradient(90deg, transparent, #ff4500, #ffd700, transparent);
+          background-size: 200% 100%;
+          z-index: 10;
+          opacity: 0;
+        }
+
+        @keyframes moltenFlash {
+          0% { background-position: 200% 0; opacity: 0; }
+          2% { opacity: 1; }
+          15% { background-position: -200% 0; opacity: 1; }
+          17%, 100% { opacity: 0; }
+        }
+
+        .stair-item::before {
+          content: "";
+          position: absolute;
+          top: 0; left: 0; right: 0;
+          z-index: 8;
+          background: #fff;
+        }
+
+        .stair-1::before, .stair-3::before, .stair-5::before, .stair-7::before, .stair-9::before {
+          height: 1px;
+          animation: whiteGlowThin 6s infinite ease-in-out;
+        }
+
+        .stair-2::before, .stair-4::before, .stair-6::before, .stair-8::before {
+          height: 2px;
+          animation: whiteGlowThick 6s infinite ease-in-out;
+        }
+
+        @keyframes whiteGlowThin {
+          0%, 100% { opacity: 0.1; }
+          50% { opacity: 0.4; box-shadow: 0 0 4px rgba(255, 255, 255, 0.1); }
+        }
+
+        @keyframes whiteGlowThick {
+          0%, 100% { opacity: 0.2; }
+          50% { opacity: 0.6; box-shadow: 0 0 10px rgba(255, 255, 255, 0.3); }
+        }
+
+        .side-line { 
+          position: absolute; 
+          top: 0; 
+          right: 0; 
+          z-index: 7; 
+          transform-origin: top;
+        }
+        
+        .side-thin { width: 1px; }
+        .side-thick { width: 2px; }
+
+        .side-static.side-thin { 
+          background: linear-gradient(180deg, rgba(255,255,255,0.06) 0%, transparent 80%); 
+        }
+        .side-static.side-thick { 
+          background: linear-gradient(180deg, rgba(255,255,255,0.15) 0%, transparent 90%); 
+        }
+        
+        .side-fast-fade.side-thin {
+          background: linear-gradient(180deg, rgba(255,255,255,0.18) 0%, transparent 100%);
+          animation: sideBreath 7s infinite ease-in-out;
+        }
+
+        .side-fast-fade.side-thick {
+          background: linear-gradient(180deg, 
+            rgba(255,255,255,0.3) 0%, 
+            rgba(255,255,255,0.1) 20%, 
+            transparent 100%);
+          animation: sideBreath 7s infinite ease-in-out;
+        }
+
+        @keyframes sideBreath { 
+          0%, 100% { 
+            opacity: 0; 
+            transform: scaleY(0.8) translateY(-10px); 
+          } 
+          15%, 45% { 
+            opacity: 1; 
+            transform: scaleY(1) translateY(0); 
+          } 
+          60% { 
+            opacity: 0; 
+            transform: scaleY(1.1) translateY(5px);
+          }
+        }
+
+        .stair-1 .molten-line { animation: moltenFlash 5s infinite linear; animation-delay: 0.5s; }
+        .stair-2 .molten-line { animation: moltenFlash 7s infinite linear; animation-delay: 2s; }
+        .stair-3 .molten-line { animation: moltenFlash 4s infinite linear; animation-delay: 3s; }
+        .stair-4 .molten-line { animation: moltenFlash 8s infinite linear; animation-delay: 1s; }
+        .stair-5 .molten-line { animation: moltenFlash 4.5s infinite linear; animation-delay: 0s; }
+        .stair-6 .molten-line { animation: moltenFlash 6.5s infinite linear; animation-delay: 4s; }
+        .stair-7 .molten-line { animation: moltenFlash 5.5s infinite linear; animation-delay: 1.5s; }
+        .stair-8 .molten-line { animation: moltenFlash 7.5s infinite linear; animation-delay: 3.5s; }
+        .stair-9 .molten-line { animation: moltenFlash 6s infinite linear; animation-delay: 2.5s; }
+
+        .delay-1500 { animation-delay: 1.5s; }
+        .delay-2000 { animation-delay: 2s; }
+        .delay-2500 { animation-delay: 2.5s; }
+        .delay-3000 { animation-delay: 3s; }
+        .delay-3500 { animation-delay: 3.5s; }
+        .delay-4000 { animation-delay: 4s; }
+        .delay-5000 { animation-delay: 5s; }
+        .delay-6000 { animation-delay: 6s; }
+        .delay-7000 { animation-delay: 7s; }
+        .delay-8000 { animation-delay: 8s; }
+        .delay-9000 { animation-delay: 9s; }
+      
