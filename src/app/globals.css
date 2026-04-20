@@ -208,7 +208,7 @@ body {
         .molten-line {
           position: absolute;
           top: 0; left: 0; right: 0;
-          height: 3px;
+          height: 2px;
           background: linear-gradient(90deg, transparent, #ff4500, #ffd700, transparent);
           background-size: 200% 100%;
           z-index: 10;
@@ -236,7 +236,7 @@ body {
         }
 
         .stair-2::before, .stair-4::before, .stair-6::before, .stair-8::before {
-          height: 2px;
+          height: 1.5px;
           animation: whiteGlowThick 6s infinite ease-in-out;
         }
 
@@ -259,7 +259,7 @@ body {
         }
         
         .side-thin { width: 1px; }
-        .side-thick { width: 2px; }
+        .side-thick { width: 1.5px; }
 
         .side-static.side-thin { 
           background: linear-gradient(180deg, rgba(255,255,255,0.06) 0%, transparent 80%); 
@@ -317,4 +317,3 @@ body {
         .delay-7000 { animation-delay: 7s; }
         .delay-8000 { animation-delay: 8s; }
         .delay-9000 { animation-delay: 9s; }
-      
