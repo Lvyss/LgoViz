@@ -32,7 +32,7 @@ export default function HeroSection() {
       {/* STAIRCASE */}
       <div className="stair-container">
         {[85, 70, 55, 40, 30, 40, 55, 70, 85].map((height, idx) => (
-          <div key={idx} className={`stair-item h-[${height}vh] stair-${idx + 1}`}>
+          <div key={idx} className={`stair-item stair-${idx + 1}`} style={{ height: `${height}vh` }}>
             <div className="molten-line" />
             
             {idx === 0 && (
