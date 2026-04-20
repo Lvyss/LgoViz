@@ -121,7 +121,7 @@ export default function Navbar() {
           </div>
 
           {/* CENTER: NAV LINKS */}
-          <div className="flex items-center justify-center gap-12">
+          <div className="flex items-center justify-center gap-14">
             {menuItems.map((item) => {
               let isActive = pathname === item.href || (pathname === '/' && item.href.includes('#') && hash === item.href.slice(1))
               
@@ -130,7 +130,7 @@ export default function Navbar() {
                   key={item.label}
                   onClick={item.action}
                   className={`
-                    text-sm font-poppins tracking-wide transition-all duration-300
+                    text-xs font-poppins tracking-tight transition-all duration-300
                     ${isActive 
                       ? 'text-white border-b border-white/40 pb-1' 
                       : 'text-white hover:text-white/60'

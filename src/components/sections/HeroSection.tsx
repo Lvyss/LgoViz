@@ -101,12 +101,12 @@ export default function HeroSection() {
       <div className="absolute top-[20%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-white/[0.01] rounded-full blur-[120px] z-[1]" />
 
       {/* HERO CONTENT - PERKECIL PADDING & TEXT */}
-      <div className="relative z-20 w-full px-4 pt-[8vh]">
+      <div className="relative z-20 w-full px-4 pt-[9vh]">
         <div className="max-w-4xl mx-auto text-center">
           
           {/* JUDUL - PERKECIL UKURAN */}
           <div className="mb-4">
-            <h1 className="text-5xl font-black leading-none tracking-tight md:text-7xl lg:text-8xl">
+            <h1 className="text-5xl font-black leading-none tracking-tight md:text-7xl lg:text-6xl">
               {displayText}
               {showCursor && (
                 <span className="inline-block w-[3px] h-[0.8em] bg-white/80 ml-1 align-middle animate-pulse" />
@@ -122,10 +122,10 @@ export default function HeroSection() {
               transition={{ duration: 0.5, ease: "easeOut" }}
               className="space-y-2"
             >
-              <p className="text-base font-light tracking-wide md:text-xl lg:text-2xl text-white/80">
-                Visualisasi Logika & Algoritma
-              </p>
-              <p className="text-[8px] md:text-[10px] tracking-[0.3em] uppercase text-gray-500 font-light">
+<p className="text-base font-light tracking-wide md:text-xl lg:text-xl text-white/90">
+  Visualisasi <span className="font-medium ">Logika & Algoritma</span>
+</p>
+              <p className="text-[8px] md:text-[10px] tracking-[0.3em] uppercase text-gray-300 font-light">
                 Jelajahi · Pahami · Kuasai
               </p>
             </motion.div>
@@ -137,7 +137,7 @@ export default function HeroSection() {
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2, duration: 0.5, ease: "easeOut" }}
-              className="flex flex-col items-center gap-5 mt-8"
+              className="flex flex-col items-center gap-5 mt-8 font-poppins"
             >
               <Link 
                 href="/auth/register" 
@@ -147,10 +147,10 @@ export default function HeroSection() {
               </Link>
               
               <Link href="/modules" className="flex items-center gap-2 group">
-                <span className="text-white/40 text-[9px] uppercase tracking-[0.3em] group-hover:text-white/70 transition duration-300">
+                <span className="text-white/60 text-[9px] uppercase tracking-[0.3em] group-hover:text-white transition duration-300">
                   Lihat Modul
                 </span>
-                <svg className="w-2.5 h-2.5 transition-all text-white/40 group-hover:text-white/70 group-hover:translate-x-1" fill="none" viewBox="0 0 10 10">
+                <svg className="w-2.5 h-2.5 transition-all text-white/60 group-hover:text-white group-hover:translate-x-1" fill="none" viewBox="0 0 10 10">
                   <path d="M1 5H9M9 5L5 1M9 5L5 9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </Link>
