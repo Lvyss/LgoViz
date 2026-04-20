@@ -30,7 +30,9 @@ export default function RootLayout({
         <div className="bg-glow-orb" />
         <Navbar />
         <main className="flex-1 pt-16">{children}</main>
+        <div id="about"className="">
         <Footer />
+        </div>
       </body>
     </html>
   )

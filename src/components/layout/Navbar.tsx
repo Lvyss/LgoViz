@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useEffect, useState } from 'react'
+import { motion } from 'framer-motion' // 1. Import motion
 
 export default function Navbar() {
   const pathname = usePathname()
@@ -11,14 +12,53 @@ export default function Navbar() {
   const supabase = createClient()
   const [user, setUser] = useState<any>(null)
   const [scrolled, setScrolled] = useState(false)
+  const [scrollY, setScrollY] = useState(0)
+  const [hash, setHash] = useState('')
 
   useEffect(() => {
+    setScrollY(window.scrollY)
+    setHash(window.location.hash)
+
     const handleScroll = () => {
       setScrolled(window.scrollY > 20)
+      setScrollY(window.scrollY)
     }
+    
+    const handleHashChange = () => {
+      setHash(window.location.hash)
+    }
+    
     window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
+    window.addEventListener('hashchange', handleHashChange)
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+      window.removeEventListener('hashchange', handleHashChange)
+    }
   }, [])
+
+  const scrollToSection = (sectionId: string) => {
+    const section = document.getElementById(sectionId)
+    if (section) {
+      const navbarHeight = 64
+      const elementPosition = section.getBoundingClientRect().top
+      const offsetPosition = elementPosition + window.scrollY - navbarHeight
+      
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      })
+    }
+  }
+
+  useEffect(() => {
+    if (pathname === '/' && window.location.hash) {
+      const sectionId = window.location.hash.slice(1)
+      setTimeout(() => {
+        scrollToSection(sectionId)
+      }, 100)
+    }
+  }, [pathname])
 
   useEffect(() => {
     const getUser = async () => {
@@ -40,72 +80,97 @@ export default function Navbar() {
     router.refresh()
   }
 
+  const menuItems = [
+    { label: 'Beranda', action: () => pathname === '/' ? window.scrollTo({ top: 0, behavior: 'smooth' }) : router.push('/'), href: '/' },
+    { label: 'Fitur', action: () => pathname === '/' ? scrollToSection('fitur') : router.push('/#fitur'), href: '/#fitur' },
+    { label: 'Modul', action: () => pathname === '/' ? scrollToSection('modul') : router.push('/#modul'), href: '/#modul' },
+    { label: 'Pelajari', action: () => router.push('/dashboard'), href: '/dashboard' },
+    { label: 'Tentang', action: () => pathname === '/' ? scrollToSection('about') : router.push('/#about'), href: '/#about' },
+  ]
+
   return (
-    <nav
-      className={`fixed top-0 w-full z-50 transition-all duration-300 ${
+    // 2. Ganti nav jadi motion.nav
+    <motion.nav
+      // 3. Konfigurasi Animasi Slide Down
+      initial={{ y: -100, opacity: 0 }} // Start: di luar layar atas & transparan
+      animate={{ y: 0, opacity: 1 }}    // End: posisi normal & muncul
+      transition={{ 
+        duration: 0.8, 
+        ease: [0.16, 1, 0.3, 1], // Smooth cubic-bezier flow
+        delay: 0.1 
+      }}
+      className={`fixed top-0 w-full z-[100] transition-colors duration-500 ${
         scrolled
-          ? 'bg-[#0a0a0f]/90 backdrop-blur-xl border-b border-white/10'
+          ? 'bg-black/60 backdrop-blur-md border-b border-white/5'
           : 'bg-transparent'
       }`}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link href="/" className="group">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center">
-                <span className="text-white font-bold text-sm">L</span>
-              </div>
-              <span className="font-semibold text-lg tracking-tight">
-                <span className="text-white">Lgo</span>
-                <span className="text-emerald-400">Viz</span>
-              </span>
-            </div>
-          </Link>
-
-          {/* Navigation Links - Desktop */}
-          <div className="hidden md:flex items-center gap-8">
-            <Link
-              href="/dashboard"
-              className="text-sm text-gray-300 hover:text-white transition-colors"
+      <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
+        <div className="grid items-center h-24 grid-cols-3">
+          
+          {/* LEFT: LOGO */}
+          <div className="flex justify-start">
+            <button
+              onClick={() => pathname === '/' ? window.scrollTo({ top: 0, behavior: 'smooth' }) : router.push('/')}
+              className="flex items-center gap-2 group"
             >
-              Dashboard
-            </Link>
+              <div className="w-16 h-16">
+                <img src="/images/logo.png" alt="Logo" className="object-contain w-full h-full" />
+              </div>
+            </button>
           </div>
 
-          {/* Auth Buttons */}
-          <div className="flex items-center gap-3">
+          {/* CENTER: NAV LINKS */}
+          <div className="flex items-center justify-center gap-12">
+            {menuItems.map((item) => {
+              let isActive = pathname === item.href || (pathname === '/' && item.href.includes('#') && hash === item.href.slice(1))
+              
+              return (
+                <button
+                  key={item.label}
+                  onClick={item.action}
+                  className={`
+                    text-sm font-poppins tracking-wide transition-all duration-300
+                    ${isActive 
+                      ? 'text-white border-b border-white/40 pb-1' 
+                      : 'text-white hover:text-white/60'
+                    }
+                  `}
+                >
+                  {item.label}
+                </button>
+              )
+            })}
+          </div>
+
+          {/* RIGHT: AUTH & CTA */}
+          <div className="flex items-center justify-end gap-8">
             {user ? (
-              <>
-                <span className="text-sm text-gray-400 hidden lg:block">
+              <div className="flex items-center gap-6">
+                <span className="hidden text-sm font-light text-white lg:block">
                   {user.email?.split('@')[0]}
                 </span>
                 <button
                   onClick={handleLogout}
-                  className="px-4 py-2 text-sm font-medium text-gray-300 hover:text-white transition-colors"
+                  className="text-sm font-light text-white transition-colors hover:text-white/60"
                 >
                   Logout
                 </button>
-              </>
+              </div>
             ) : (
-              <>
-                <Link
-                  href="/auth/login"
-                  className="px-4 py-2 text-sm font-medium text-gray-300 hover:text-white transition-colors"
-                >
-                  Login
-                </Link>
+              <div className="flex items-center gap-6">
                 <Link
                   href="/auth/register"
-                  className="px-4 py-2 text-sm font-medium bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg hover:shadow-lg hover:shadow-emerald-500/25 transition-all"
+                  className="px-6 py-2.5 text-sm font-medium font-poppins text-white border border-white/30 rounded-full hover:bg-white/10 transition-all duration-300"
                 >
-                  Register
+                  Ayo Mulai
                 </Link>
-              </>
+              </div>
             )}
           </div>
+
         </div>
       </div>
-    </nav>
+    </motion.nav>
   )
 }
