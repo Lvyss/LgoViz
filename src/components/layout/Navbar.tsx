@@ -106,7 +106,7 @@ export default function Navbar() {
       }`}
     >
       <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
-        <div className="grid items-center h-24 grid-cols-3">
+        <div className="grid items-center grid-cols-3 h-14">
           
           {/* LEFT: LOGO */}
           <div className="flex justify-start">
@@ -114,7 +114,7 @@ export default function Navbar() {
               onClick={() => pathname === '/' ? window.scrollTo({ top: 0, behavior: 'smooth' }) : router.push('/')}
               className="flex items-center gap-2 group"
             >
-              <div className="w-16 h-16">
+              <div className="w-8 h-8">
                 <img src="/images/logo.png" alt="Logo" className="object-contain w-full h-full" />
               </div>
             </button>

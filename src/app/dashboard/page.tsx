@@ -1,274 +1,639 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { motion, AnimatePresence } from 'framer-motion'
 import { createClient } from '@/lib/supabase/client'
 import { getAllModules, getTopicsByModule, getUserProgress } from '@/lib/supabase/queries'
-import { initializeUserProgress } from '@/lib/supabase/queries'
 
-
+// --- TYPES & CONFIG ---
 type ModuleColor = 'emerald' | 'blue' | 'purple'
-
 type Module = {
-  id: string
+  id: string; title: string; description: string; icon: string;
+  color: ModuleColor; progress: number; totalTopics: number; completedTopics: number;
+}
+
+const colorStyles: Record<ModuleColor, { text: string; glow: string; border: string; bg: string }> = {
+  emerald: { text: 'text-emerald-400', glow: 'bg-emerald-500 shadow-[0_0_30px_rgba(16,185,129,0.3)]', border: 'border-emerald-500/40', bg: 'bg-emerald-500/10' },
+  blue:    { text: 'text-blue-400',    glow: 'bg-blue-500 shadow-[0_0_30px_rgba(59,130,246,0.3)]',    border: 'border-blue-500/40',    bg: 'bg-blue-500/10'    },
+  purple:  { text: 'text-purple-400',  glow: 'bg-purple-500 shadow-[0_0_30px_rgba(168,85,247,0.3)]',  border: 'border-purple-500/40',  bg: 'bg-purple-500/10'  },
+}
+
+// --- TUTORIAL STEPS CONFIG ---
+// anchor: id elemen (string) atau array id (gabung jadi 1 highlight box)
+// popupSide: di sisi mana popup muncul relatif ke elemen ('right' | 'left' | 'bottom' | 'top')
+const TUTORIAL_STEPS: Array<{
+  anchor: string | string[]
   title: string
-  description: string
-  icon: string
-  difficulty: string
-  color: ModuleColor
-  totalTopics: number
-  completedTopics: number
-  progress: number
-}
-
-const moduleIcons: Record<string, string> = {
-  percabangan: '🔀',
-  perulangan: '🔄',
-  'struktur-data': '📊',
-}
-
-const moduleColors: Record<string, ModuleColor> = {
-  percabangan: 'emerald',
-  perulangan: 'blue',
-  'struktur-data': 'purple',
-}
-
-const moduleDifficulties: Record<string, string> = {
-  percabangan: 'Beginner',
-  perulangan: 'Intermediate',
-  'struktur-data': 'Advanced',
-}
-
-const colorStyles: Record<ModuleColor, { text: string; border: string; hover: string; iconBg: string; badge: string; button: string }> = {
-  emerald: {
-    text: 'text-emerald-400',
-    border: 'border-emerald-500/30',
-    hover: 'hover:border-emerald-500/50',
-    iconBg: 'bg-emerald-500/20',
-    badge: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
-    button: 'text-emerald-400 hover:bg-emerald-500/10',
+  desc: string
+  popupSide: 'right' | 'left' | 'top' | 'bottom'
+}> = [
+  {
+    anchor: 'tutorial-progress',
+    title: 'Pusat Progres',
+    desc: '📊 Pusat kendali progres belajarmu. Setiap topik yang selesai akan meningkatkan persentase di sini.',
+    popupSide: 'right' as const,
   },
-  blue: {
-    text: 'text-blue-400',
-    border: 'border-blue-500/30',
-    hover: 'hover:border-blue-500/50',
-    iconBg: 'bg-blue-500/20',
-    badge: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-    button: 'text-blue-400 hover:bg-blue-500/10',
+  {
+    anchor: ['tutorial-orbital-zone', 'tutorial-nav'],  // gabung 2 elemen jadi 1 highlight
+    title: 'Orbital Selector',
+    desc: '🔄 Navigasi orbital untuk memilih modul. Gunakan tombol PREV / NEXT untuk berganti modul.',
+    popupSide: 'top' as const,
   },
-  purple: {
-    text: 'text-purple-400',
-    border: 'border-purple-500/30',
-    hover: 'hover:border-purple-500/50',
-    iconBg: 'bg-purple-500/20',
-    badge: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
-    button: 'text-purple-400 hover:bg-purple-500/10',
+  {
+    anchor: 'tutorial-description',
+    title: 'Detail Modul',
+    desc: '🔗 Setelah memilih modul, tekan tombol Connect Neural Link di sini untuk mulai pembelajaran.',
+    popupSide: 'left' as const,
   },
+]
+
+// ─── Helper: hitung rect elemen relatif ke viewport ───────────────────────────
+function getRect(id: string): DOMRect | null {
+  const el = document.getElementById(id)
+  return el ? el.getBoundingClientRect() : null
 }
 
-export default function DashboardPage() {
+// Merge beberapa rect jadi satu bounding box yang mencakup semuanya
+function getMergedRect(ids: string[]): DOMRect | null {
+  const rects = ids.map(getRect).filter(Boolean) as DOMRect[]
+  if (rects.length === 0) return null
+  const top    = Math.min(...rects.map(r => r.top))
+  const left   = Math.min(...rects.map(r => r.left))
+  const bottom = Math.max(...rects.map(r => r.bottom))
+  const right  = Math.max(...rects.map(r => r.right))
+  return { top, left, bottom, right, width: right - left, height: bottom - top, x: left, y: top, toJSON: () => ({}) } as DOMRect
+}
+
+// ─── Komponen Overlay Tutorial ─────────────────────────────────────────────────
+function TutorialOverlay({
+  step,
+  totalSteps,
+  onNext,
+  onPrev,
+  onFinish,
+}: {
+  step: number
+  totalSteps: number
+  onNext: () => void
+  onPrev: () => void
+  onFinish: (skipForever: boolean) => void
+}) {
+  const PAD = 12          // padding di sekitar elemen highlight
+  const RADIUS = 16       // border-radius lubang
+
+  const [rect, setRect] = useState<DOMRect | null>(null)
+  const [winSize, setWinSize] = useState({ w: 0, h: 0 })
+  const rafRef = useRef<number>(0)
+
+  const config = TUTORIAL_STEPS[step]
+
+  // Update rect tiap frame supaya smooth saat resize / animasi
+  const measureLoop = useCallback(() => {
+    const r = Array.isArray(config.anchor)
+      ? getMergedRect(config.anchor)
+      : getRect(config.anchor)
+    setRect(r)
+    setWinSize({ w: window.innerWidth, h: window.innerHeight })
+    rafRef.current = requestAnimationFrame(measureLoop)
+  }, [config.anchor])
+
+  useEffect(() => {
+    rafRef.current = requestAnimationFrame(measureLoop)
+    return () => cancelAnimationFrame(rafRef.current)
+  }, [measureLoop])
+
+  if (!rect || winSize.w === 0) return null
+
+  // Koordinat lubang (dengan padding)
+  const hx = rect.left - PAD
+  const hy = rect.top  - PAD
+  const hw = rect.width  + PAD * 2
+  const hh = rect.height + PAD * 2
+
+  // Posisi popup
+  const POPUP_W = 340
+  const POPUP_H = 260 // estimasi, konten bisa lebih
+  const GAP = 20
+
+  let popupStyle: React.CSSProperties = {}
+  const side = config.popupSide
+
+  if (side === 'right') {
+    popupStyle = {
+      left: Math.min(hx + hw + GAP, winSize.w - POPUP_W - 16),
+      top: hy + hh / 2,
+      transform: 'translateY(-50%)',
+    }
+  } else if (side === 'left') {
+    popupStyle = {
+      left: Math.max(hx - POPUP_W - GAP, 16),
+      top: hy + hh / 2,
+      transform: 'translateY(-50%)',
+    }
+  } else if (side === 'bottom') {
+    popupStyle = {
+      left: hx + hw / 2 - POPUP_W / 2,
+      top: hy + hh + GAP,
+    }
+  } else {
+    popupStyle = {
+      left: hx + hw / 2 - POPUP_W / 2,
+      top: Math.max(hy - POPUP_H - GAP, 16),
+    }
+  }
+
+  // Clamp horizontal
+  if (typeof popupStyle.left === 'number') {
+    popupStyle.left = Math.max(16, Math.min(popupStyle.left, winSize.w - POPUP_W - 16))
+  }
+
+  // SVG path: full screen rect berlubang di tengah (even-odd rule)
+  const W = winSize.w
+  const H = winSize.h
+  const r = RADIUS
+
+  // Rounded rect path untuk lubang
+  const hole = `
+    M ${hx + r} ${hy}
+    L ${hx + hw - r} ${hy}
+    Q ${hx + hw} ${hy}   ${hx + hw} ${hy + r}
+    L ${hx + hw} ${hy + hh - r}
+    Q ${hx + hw} ${hy + hh} ${hx + hw - r} ${hy + hh}
+    L ${hx + r} ${hy + hh}
+    Q ${hx} ${hy + hh} ${hx} ${hy + hh - r}
+    L ${hx} ${hy + r}
+    Q ${hx} ${hy} ${hx + r} ${hy}
+    Z
+  `
+
+  // Arrow arah popup
+  const arrowStyle: React.CSSProperties = { position: 'absolute' }
+  if (side === 'right') {
+    Object.assign(arrowStyle, { left: -8, top: '50%', transform: 'translateY(-50%) rotate(45deg)', borderLeft: 'none', borderBottom: 'none' })
+  } else if (side === 'left') {
+    Object.assign(arrowStyle, { right: -8, top: '50%', transform: 'translateY(-50%) rotate(45deg)', borderRight: 'none', borderTop: 'none' })
+  } else if (side === 'bottom') {
+    Object.assign(arrowStyle, { top: -8, left: '50%', transform: 'translateX(-50%) rotate(45deg)', borderBottom: 'none', borderRight: 'none' })
+  } else {
+    Object.assign(arrowStyle, { bottom: -8, left: '50%', transform: 'translateX(-50%) rotate(45deg)', borderTop: 'none', borderLeft: 'none' })
+  }
+
+  return (
+    <>
+      {/* ── Layer 1: SVG Overlay berlubang (TIDAK menghalangi elemen highlight) ── */}
+      <svg
+        style={{
+          position: 'fixed', inset: 0,
+          width: '100%', height: '100%',
+          zIndex: 9000,
+          pointerEvents: 'none',   // klik tembus ke highlight element
+        }}
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <defs>
+          <mask id="tutorial-mask">
+            {/* Putih = kelihatan (overlay gelap), Hitam = transparan (lubang) */}
+            <rect width={W} height={H} fill="white" />
+            <path d={hole} fill="black" />
+          </mask>
+        </defs>
+        <rect
+          width={W} height={H}
+          fill="rgba(0,0,0,0.72)"
+          mask="url(#tutorial-mask)"
+        />
+        {/* Border highlight di sekeliling lubang */}
+        <path
+          d={hole}
+          fill="none"
+          stroke="rgba(234,88,12,0.6)"
+          strokeWidth="2"
+          style={{ filter: 'drop-shadow(0 0 8px rgba(234,88,12,0.5))' }}
+        />
+      </svg>
+
+      {/* ── Layer 2: Popup (di atas overlay, bisa diklik) ── */}
+      <motion.div
+        key={step}
+        initial={{ opacity: 0, scale: 0.92 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.92 }}
+        transition={{ duration: 0.2 }}
+        style={{
+          position: 'fixed',
+          ...popupStyle,
+          width: POPUP_W,
+          zIndex: 9100,         // DI ATAS overlay
+        }}
+      >
+        {/* Arrow */}
+        <div
+          style={{
+            ...arrowStyle,
+            width: 14, height: 14,
+            background: '#0a0a0a',
+            border: '1px solid rgba(234,88,12,0.4)',
+            zIndex: 1,
+          }}
+        />
+
+        {/* Card */}
+        <div style={{
+          background: '#0a0a0a',
+          border: '1px solid rgba(234,88,12,0.35)',
+          borderRadius: 20,
+          padding: '24px 24px 20px',
+          boxShadow: '0 0 60px rgba(234,88,12,0.2), 0 24px 60px rgba(0,0,0,0.8)',
+          position: 'relative',
+          overflow: 'hidden',
+        }}>
+          {/* Ambient glow */}
+          <div style={{
+            position: 'absolute', top: -32, left: -32,
+            width: 100, height: 100,
+            background: 'radial-gradient(circle, rgba(234,88,12,0.15) 0%, transparent 70%)',
+            pointerEvents: 'none',
+          }} />
+
+          {/* Step dots */}
+          <div style={{ display: 'flex', gap: 6, justifyContent: 'center', marginBottom: 16 }}>
+            {Array.from({ length: totalSteps }).map((_, i) => (
+              <div key={i} style={{
+                height: 3, borderRadius: 99,
+                width: i === step ? 28 : 8,
+                background: i === step ? '#ea580c' : 'rgba(255,255,255,0.15)',
+                transition: 'all 0.3s',
+              }} />
+            ))}
+          </div>
+
+          <div style={{ position: 'relative', zIndex: 1, textAlign: 'center' }}>
+            <p style={{
+              fontSize: 9, fontWeight: 900, letterSpacing: '0.4em',
+              color: '#ea580c', textTransform: 'uppercase', marginBottom: 8,
+            }}>
+              System_Guide — {step + 1}/{totalSteps}
+            </p>
+            <h4 style={{
+              fontSize: 18, fontWeight: 900, fontStyle: 'italic',
+              letterSpacing: '-0.03em', textTransform: 'uppercase',
+              color: 'rgba(255,255,255,0.9)', marginBottom: 10,
+            }}>
+              {config.title}
+            </h4>
+            <p style={{
+              fontSize: 12, lineHeight: 1.7,
+              color: 'rgba(255,255,255,0.55)',
+              marginBottom: 20,
+            }}>
+              {config.desc}
+            </p>
+
+            {/* Buttons */}
+            <div style={{ display: 'flex', gap: 8 }}>
+              {step > 0 && (
+                <button
+                  onClick={onPrev}
+                  style={{
+                    flex: 1, padding: '11px 0', borderRadius: 12,
+                    background: 'rgba(255,255,255,0.07)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    color: 'white', fontSize: 10, fontWeight: 900,
+                    letterSpacing: '0.2em', textTransform: 'uppercase',
+                    cursor: 'pointer',
+                  }}
+                >
+                  ← Kembali
+                </button>
+              )}
+              <button
+                onClick={step < totalSteps - 1 ? onNext : () => onFinish(true)}
+                style={{
+                  flex: step > 0 ? 1 : undefined,
+                  width: step === 0 ? '100%' : undefined,
+                  padding: '11px 0', borderRadius: 12,
+                  background: 'linear-gradient(135deg, #ea580c, #c2410c)',
+                  border: 'none',
+                  color: 'black', fontSize: 10, fontWeight: 900,
+                  letterSpacing: '0.2em', textTransform: 'uppercase',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 20px rgba(234,88,12,0.35)',
+                }}
+              >
+                {step < totalSteps - 1 ? 'Lanjut →' : 'Mulai Belajar'}
+              </button>
+            </div>
+
+            {/* Options bawah */}
+            <div style={{
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              marginTop: 14, paddingTop: 12,
+              borderTop: '1px solid rgba(255,255,255,0.06)',
+            }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  style={{ accentColor: '#ea580c', width: 11, height: 11 }}
+                  onChange={e => { if (e.target.checked) onFinish(true) }}
+                />
+                <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.3em', textTransform: 'uppercase' }}>
+                  Jangan tampilkan lagi
+                </span>
+              </label>
+              <button
+                onClick={() => onFinish(false)}
+                style={{
+                  background: 'none', border: 'none',
+                  color: 'rgba(255,255,255,0.35)', cursor: 'pointer',
+                  fontSize: 9, letterSpacing: '0.3em', textTransform: 'uppercase',
+                }}
+              >
+                Lewati
+              </button>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    </>
+  )
+}
+
+// ─── Main Dashboard ─────────────────────────────────────────────────────────────
+export default function NeuralDashboardFixed() {
   const router = useRouter()
   const supabase = createClient()
-  const [user, setUser] = useState<any>(null)
-  const [modules, setModules] = useState<Module[]>([])
-  const [loading, setLoading] = useState(true)
-  const [totalProgress, setTotalProgress] = useState(0)
 
+  const [modules, setModules]         = useState<Module[]>([])
+  const [loading, setLoading]         = useState(true)
+  const [totalStats, setTotalStats]   = useState({ percent: 0, completed: 0, total: 0 })
+  const [activeIndex, setActiveIndex] = useState(0)
+
+  const [showTutorial, setShowTutorial]   = useState(false)
+  const [tutorialStep, setTutorialStep]   = useState(0)
+
+  // --- CEK TUTORIAL: muncul setiap kali halaman di-mount/di-focus
+  // sampai user centang "jangan tampilkan lagi"
+  useEffect(() => {
+    const checkTutorial = () => {
+      const skipped = localStorage.getItem('skip_neural_tutorial')
+      if (!skipped) {
+        setTutorialStep(0)
+        setShowTutorial(true)
+      }
+    }
+    checkTutorial()
+    window.addEventListener('focus', checkTutorial)
+    return () => window.removeEventListener('focus', checkTutorial)
+  }, [])
+
+  // --- DATA LOADING ---
   useEffect(() => {
     const loadDashboard = async () => {
       setLoading(true)
-      
-      // Get current user
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        router.push('/auth/login')
-        return
-      }
-      setUser(user)
-      
-          if (user) {
-      // Initialize user progress if first time
-      const existingProgress = await getUserProgress(user.id)
-      if (existingProgress.length === 0) {
-        console.log('First time user, initializing progress...')
-        await initializeUserProgress(user.id)
-      }
-    }
+      if (!user) { router.push('/auth/login'); return }
 
-      // Get modules from Supabase
-      const modulesData = await getAllModules()
-      
-      // Get user progress
+      const modulesData  = await getAllModules()
       const userProgress = await getUserProgress(user.id)
-      
-      // Create progress map for quick lookup
-      const progressMap = new Map()
-      userProgress.forEach(progress => {
-        progressMap.set(progress.topic_id, progress)
-      })
+      const progressMap  = new Map(userProgress.map(p => [p.topic_id, p]))
 
-      // Build modules with progress
-      const modulesWithProgress: Module[] = []
-      let totalCompletedTopics = 0
-      let totalTopics = 0
-
-      for (const module of modulesData) {
-        // Get topics for this module
-        const topics = await getTopicsByModule(module.id)
-        const totalTopicsCount = topics.length
-        
-        // Count completed topics for this module
-        let completedCount = 0
-        for (const topic of topics) {
-          const progress = progressMap.get(topic.id)
-          if (progress?.status === 'completed') {
-            completedCount++
-          }
+      let globalComp = 0, globalTot = 0
+      const processed = await Promise.all(modulesData.map(async (m) => {
+        const topics = await getTopicsByModule(m.id)
+        const comp   = topics.filter(t => progressMap.get(t.id)?.status === 'completed').length
+        globalComp += comp; globalTot += topics.length
+        return {
+          id: m.id, title: m.title, description: m.description,
+          icon:  m.id === 'percabangan' ? '🔀' : m.id === 'perulangan' ? '🔄' : '📊',
+          color: (m.id === 'percabangan' ? 'emerald' : m.id === 'perulangan' ? 'blue' : 'purple') as ModuleColor,
+          progress:        topics.length > 0 ? Math.round((comp / topics.length) * 100) : 0,
+          totalTopics:     topics.length,
+          completedTopics: comp,
         }
-        
-        const progressPercent = totalTopicsCount > 0 
-          ? Math.round((completedCount / totalTopicsCount) * 100) 
-          : 0
-        
-        modulesWithProgress.push({
-          id: module.id,
-          title: module.title,
-          description: module.description,
-          icon: moduleIcons[module.id] || '📚',
-          difficulty: moduleDifficulties[module.id] || 'Beginner',
-          color: moduleColors[module.id] || 'emerald',
-          totalTopics: totalTopicsCount,
-          completedTopics: completedCount,
-          progress: progressPercent,
-        })
-        
-        totalCompletedTopics += completedCount
-        totalTopics += totalTopicsCount
-      }
-      
-      setModules(modulesWithProgress)
-      setTotalProgress(totalTopics > 0 ? Math.round((totalCompletedTopics / totalTopics) * 100) : 0)
+      }))
+
+      setModules(processed)
+      setTotalStats({ percent: Math.round((globalComp / globalTot) * 100), completed: globalComp, total: globalTot })
       setLoading(false)
     }
-
     loadDashboard()
-  }, [router, supabase])
+  }, [router, supabase.auth])
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center">
-          <div className="w-8 h-8 mx-auto mb-4 border-2 rounded-full border-emerald-500 border-t-transparent animate-spin" />
-          <p className="text-gray-400">Loading dashboard...</p>
-        </div>
-      </div>
-    )
+  // --- HANDLERS ---
+  const handlePrev = () => setActiveIndex(p => (p > 0 ? p - 1 : modules.length - 1))
+  const handleNext = () => setActiveIndex(p => (p < modules.length - 1 ? p + 1 : 0))
+
+  const finishTutorial = (dontShowAgain: boolean) => {
+    // Hanya simpan ke localStorage kalau user CENTANG "jangan tampilkan lagi"
+    // Kalau cuma Lewati / selesai tanpa centang → muncul lagi saat balik ke halaman ini
+    if (dontShowAgain) localStorage.setItem('skip_neural_tutorial', 'true')
+    setShowTutorial(false)
+    setTutorialStep(0)
   }
 
-  const completedModules = modules.filter(m => m.progress === 100).length
-  const totalCompletedTopics = modules.reduce((acc, m) => acc + m.completedTopics, 0)
+  const currentActiveModule = modules[activeIndex]
+
+  if (loading) return (
+    <div className="flex items-center justify-center h-screen font-mono italic tracking-widest text-orange-500 uppercase bg-black">
+      Syncing_Neural_Link...
+    </div>
+  )
 
   return (
-    <div className="px-4 py-8 mx-auto max-w-7xl sm:px-6 lg:px-8 md:py-12">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="mb-2 text-3xl font-bold tracking-tight">
-          Welcome back, {user?.user_metadata?.full_name || user?.email?.split('@')[0]}!
-        </h1>
-        <p className="text-gray-400">
-          Continue your learning journey
-        </p>
-      </div>
+    <div className="-mt-16 h-screen w-full bg-[#010101] text-white overflow-hidden relative font-poppins selection:bg-orange-500/30">
 
-      {/* Stats Grid */}
-      <div className="grid gap-6 mb-12 md:grid-cols-3">
-        <div className="p-6 border rounded-xl bg-white/5 border-white/10">
-          <div className="mb-1 text-sm text-gray-500">Total Progress</div>
-          <div className="text-3xl font-bold text-emerald-400">{totalProgress}%</div>
-          <div className="h-2 mt-3 overflow-hidden rounded-full bg-white/10">
-            <div className="h-full transition-all duration-500 rounded-full bg-emerald-500" style={{ width: `${totalProgress}%` }} />
-          </div>
-        </div>
-        
-        <div className="p-6 border rounded-xl bg-white/5 border-white/10">
-          <div className="mb-1 text-sm text-gray-500">Completed Modules</div>
-          <div className="text-3xl font-bold text-blue-400">{completedModules}/{modules.length}</div>
-          <p className="mt-2 text-xs text-gray-500">Modules fully completed</p>
-        </div>
-        
-        <div className="p-6 border rounded-xl bg-white/5 border-white/10">
-          <div className="mb-1 text-sm text-gray-500">Topics Completed</div>
-          <div className="text-3xl font-bold text-purple-400">{totalCompletedTopics}/{modules.reduce((acc, m) => acc + m.totalTopics, 0)}</div>
-          <p className="mt-2 text-xs text-gray-500">Topics mastered</p>
+      {/* 🌊 BACKGROUND */}
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        <motion.div
+          animate={{ y: ['-50%', '0%'] }}
+          transition={{ duration: 15, repeat: Infinity, ease: 'linear' }}
+          className="absolute inset-0 w-full h-[200%] opacity-[0.15]"
+          style={{ background: `repeating-linear-gradient(0deg, transparent 0%, rgba(234, 88, 12, 0.08) 5%, transparent 10%)` }}
+        />
+        <div className="absolute inset-0 flex justify-around px-10">
+          {[1,2,3,4,5,6,7,8,9,10,11,12].map(i => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0 }}
+              animate={{
+                opacity: [0, 0.4, 0.1, 0.6, 0],
+                height: i % 2 === 0 ? ['15%','45%','25%'] : ['40%','20%','70%'],
+              }}
+              transition={{ duration: 2 + i, repeat: Infinity, delay: i * 0.7, times: [0, 0.1, 0.2, 0.3, 1] }}
+              className="w-[1px] bg-gradient-to-b from-transparent via-orange-600/30 to-transparent relative"
+              style={{ marginTop: `${(i * 7) % 30}%` }}
+            >
+              <div className="absolute inset-0 w-full bg-white/10 blur-[1px]" />
+            </motion.div>
+          ))}
         </div>
       </div>
 
-      {/* Modules Grid */}
-      <h2 className="mb-6 text-2xl font-bold tracking-tight">Available Modules</h2>
-      {modules.length === 0 ? (
-        <div className="py-12 text-center border bg-white/5 rounded-xl border-white/10">
-          <p className="text-gray-400">No modules available yet.</p>
+      <div className="relative h-full mx-auto max-w-[76rem]">
+
+        {/* 1. HEADER */}
+        <div className="absolute top-16 left-0 right-0 flex justify-between items-start z-[100]">
+          <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
+            <h1 className="text-2xl italic font-black leading-none tracking-tighter uppercase text-white/90">
+              PROGRESS<span className="text-orange-500">_</span>BELAJAR
+            </h1>
+            <p className="text-[8px] tracking-[0.5em] text-gray-700 font-bold uppercase mt-2">Experimental Learning Interface</p>
+          </motion.div>
         </div>
-      ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {modules.map((module) => {
-            const styles = colorStyles[module.color]
-            const firstUnlockedTopic = module.id === 'percabangan' ? 'if' : 
-                                        module.id === 'perulangan' ? 'for-loop' : 'array'
-            
-            return (
-              <Link href={`/learn/${module.id}/${firstUnlockedTopic}`} key={module.id}>
-                <div
-                  className={`group relative p-6 rounded-xl border ${styles.border} ${styles.hover} transition-all duration-200 hover:scale-[1.02] hover:shadow-xl bg-white/5 cursor-pointer`}
-                >
-                  {/* Difficulty Badge */}
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="text-4xl">{module.icon}</div>
-                    <span className={`text-xs px-2 py-1 rounded-full border ${styles.badge}`}>
-                      {module.difficulty}
-                    </span>
+
+        {/* 2. PROGRESS CORE — id untuk tutorial highlight */}
+        <div
+          id="tutorial-progress"
+          className="absolute top-[350px] left-0 -translate-y-1/2 z-50"
+        >
+          <div className="relative transition-all duration-700">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1px] h-[140%] bg-gradient-to-b from-transparent via-orange-500/10 to-transparent blur-sm -z-10" />
+            <div className="w-[420px] h-[420px] rounded-full flex items-center justify-center relative overflow-hidden bg-[#080808] border border-white/[0.04] shadow-[30px_0_100px_rgba(0,0,0,0.9),inset_0_0_80px_rgba(0,0,0,1)]">
+              <div className="absolute inset-5 rounded-full border border-orange-950/20 bg-[#040404] shadow-[inset_0_0_40px_rgba(0,0,0,0.9)]" />
+              <svg className="absolute inset-0 w-full h-full -rotate-90 scale-[0.88] z-10">
+                <circle cx="210" cy="210" r="185" fill="transparent" stroke="rgba(255,255,255,0.01)" strokeWidth="1" />
+                <motion.circle
+                  cx="210" cy="210" r="185"
+                  fill="transparent" stroke="#ea580c" strokeWidth="6"
+                  strokeDasharray="1162"
+                  initial={{ strokeDashoffset: 1162 }}
+                  animate={{ strokeDashoffset: 1162 - (1162 * totalStats.percent) / 100 }}
+                  strokeLinecap="round"
+                  transition={{ duration: 2.5, ease: 'easeOut' }}
+                  className="drop-shadow-[0_0_15px_rgba(234,88,12,0.5)]"
+                />
+              </svg>
+              <div className="relative z-20 flex flex-col items-center justify-center text-center">
+                <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.5 }}>
+                  <span className="block text-6xl italic font-black leading-none tracking-tighter text-white opacity-90">
+                    {totalStats.percent}<span className="text-2xl font-light text-orange-500">%</span>
+                  </span>
+                  <span className="text-[7px] tracking-[0.5em] text-orange-600 font-black uppercase mt-3 block">Semua Progres</span>
+                </motion.div>
+                <div className="w-10 h-px mt-6 mb-6 bg-orange-900/30" />
+                <div className="flex flex-col gap-4">
+                  <div className="flex flex-col items-center">
+                    <p className="text-[6px] text-gray-600 font-bold uppercase tracking-[0.4em] mb-1">Topik Selesai</p>
+                    <p className="text-xl italic font-black tracking-tighter text-white/80">
+                      {totalStats.completed} <span className="text-xs font-normal text-gray-800">/ {totalStats.total}</span>
+                    </p>
                   </div>
-                  
-                  {/* Title */}
-                  <h3 className={`text-xl font-semibold mb-2 ${styles.text}`}>
-                    {module.title}
-                  </h3>
-                  
-                  {/* Description */}
-                  <p className="mb-4 text-sm leading-relaxed text-gray-400">
-                    {module.description}
-                  </p>
-                  
-                  {/* Progress */}
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-xs text-gray-500">
-                      <span>Progress</span>
-                      <span>{module.progress}%</span>
-                    </div>
-                    <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
-                      <div 
-                        className={`h-full rounded-full transition-all duration-500 ${
-                          module.color === 'emerald' ? 'bg-emerald-500' 
-                          : module.color === 'blue' ? 'bg-blue-500' 
-                          : 'bg-purple-500'
-                        }`}
-                        style={{ width: `${module.progress}%` }}
-                      />
-                    </div>
-                    <div className="flex items-center justify-between pt-2">
-                      <span className="text-xs text-gray-500">{module.completedTopics}/{module.totalTopics} topics</span>
-                      <span className={`text-sm font-medium ${styles.button} transition-colors px-3 py-1.5 rounded-lg`}>
-                        {module.progress === 0 ? 'Start →' : module.progress === 100 ? 'Review →' : 'Continue →'}
-                      </span>
-                    </div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 bg-orange-600 rounded-full animate-pulse" />
+                    <p className="text-xl italic font-black text-orange-500">0{activeIndex + 1}</p>
                   </div>
                 </div>
-              </Link>
-            )
-          })}
+              </div>
+            </div>
+          </div>
         </div>
-      )}
+
+        {/* 3. ORBITAL SELECTOR */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="relative w-full h-full pointer-events-auto">
+            {modules.map((module, index) => {
+              let diff = index - activeIndex
+              if (diff >  modules.length / 2) diff -= modules.length
+              if (diff < -modules.length / 2) diff += modules.length
+              const angle  = diff * 42
+              const xBase  = 260
+              const xCurve = Math.abs(diff) * 70
+              return (
+                <motion.div
+                  key={module.id}
+                  animate={{
+                    rotate: angle, opacity: 1 - Math.abs(diff) * 0.5,
+                    scale: index === activeIndex ? 1.1 : 0.8,
+                    filter: `blur(${Math.abs(diff) * 4}px)`,
+                    x: xBase + xCurve, zIndex: 50 - Math.abs(diff),
+                  }}
+                  transition={{ type: 'spring', stiffness: 60, damping: 20 }}
+                  style={{ originX: '-250px', originY: '50%' }}
+                  className="absolute top-[42%] left-[18%] -translate-y-1/2"
+                >
+                  <Link href={`/learn/${module.id}/intro`}>
+                    {/* id tutorial hanya di orbital yang aktif */}
+                    <div
+                      id={index === activeIndex ? 'tutorial-orbital-zone' : undefined}
+                      className={`w-40 h-40 rounded-full bg-[#0a0a0a] border-2 flex flex-col items-center justify-center text-center shadow-[0_0_50px_rgba(0,0,0,0.8)] cursor-pointer group relative overflow-hidden ${index === activeIndex ? colorStyles[module.color].border : 'border-white/5'}`}
+                    >
+                      <div className={`absolute inset-0 ${colorStyles[module.color].bg} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
+                      <span className="relative z-10 mb-2 text-3xl">{module.icon}</span>
+                      <h4 className="relative z-10 text-[9px] font-black uppercase tracking-[0.15em] leading-tight max-w-[100px]">{module.title}</h4>
+                    </div>
+                  </Link>
+                </motion.div>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* 4. DESCRIPTION POPUP — id untuk tutorial highlight */}
+        <div
+          id="tutorial-description"
+          className="absolute top-1/2 right-0 -translate-y-1/2 w-[360px] z-[50]"
+        >
+          <AnimatePresence mode="wait">
+            {currentActiveModule && (
+              <motion.div
+                key={currentActiveModule.id}
+                initial={{ x: 50, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: -20, opacity: 0 }}
+                className="bg-black/40 border border-white/5 backdrop-blur-3xl p-10 rounded-[3rem] shadow-2xl relative overflow-hidden"
+              >
+                <div className={`absolute -top-12 -right-12 w-32 h-32 blur-[60px] opacity-20 ${colorStyles[currentActiveModule.color].glow}`} />
+                <div className="relative z-10">
+                  <span className={`text-[9px] font-black tracking-[0.4em] uppercase mb-4 block ${colorStyles[currentActiveModule.color].text}`}>Sector_Specification</span>
+                  <h3 className="mb-4 text-3xl italic font-black leading-none tracking-tighter uppercase text-white/90">{currentActiveModule.title}</h3>
+                  <p className="mb-8 text-xs italic font-medium leading-relaxed text-gray-500">"{currentActiveModule.description}"</p>
+                  <div className="space-y-4">
+                    <div className="flex items-end justify-between">
+                      <span className="text-[8px] font-bold text-gray-600 uppercase tracking-widest">Mastery</span>
+                      <span className="text-xl italic font-black">{currentActiveModule.progress}%</span>
+                    </div>
+                    <div className="w-full h-1 overflow-hidden border rounded-full bg-white/5 border-white/5">
+                      <motion.div initial={{ width: 0 }} animate={{ width: `${currentActiveModule.progress}%` }} className={`h-full ${colorStyles[currentActiveModule.color].glow} bg-current transition-all duration-1000`} />
+                    </div>
+                  </div>
+                  <Link href={`/learn/${currentActiveModule.id}/intro`}>
+                    <button className={`mt-10 w-full py-4 rounded-2xl border ${colorStyles[currentActiveModule.color].border} text-[9px] font-black tracking-[0.3em] uppercase hover:bg-white/10 transition-all`}>
+                      Connect_Neural_Link
+                    </button>
+                  </Link>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* 5. NAVIGATION CONTROLS */}
+        <div className="absolute bottom-12 left-1/2 -translate-x-1/2 z-[120] flex flex-col items-center gap-5">
+          <div id="tutorial-nav" className="flex items-center gap-10 p-2 px-8 border rounded-full bg-black/60 border-white/10 backdrop-blur-md">
+            <button onClick={handlePrev} className="text-gray-600 hover:text-orange-500 transition-colors font-black text-[10px] tracking-widest">PREV</button>
+            <div className="flex gap-2">
+              {modules.map((_, i) => (
+                <div key={i} className={`h-1 rounded-full transition-all duration-500 ${i === activeIndex ? 'bg-orange-500 w-10' : 'bg-white/10 w-2'}`} />
+              ))}
+            </div>
+            <button onClick={handleNext} className="text-gray-600 hover:text-orange-500 transition-colors font-black text-[10px] tracking-widest">NEXT</button>
+          </div>
+        </div>
+
+      </div>
+
+      {/* ── TUTORIAL OVERLAY (render di luar container supaya fixed bisa full screen) ── */}
+      <AnimatePresence>
+        {showTutorial && (
+          <TutorialOverlay
+            step={tutorialStep}
+            totalSteps={TUTORIAL_STEPS.length}
+            onNext={() => setTutorialStep(s => s + 1)}
+            onPrev={() => setTutorialStep(s => s - 1)}
+            onFinish={finishTutorial}
+          />
+        )}
+      </AnimatePresence>
     </div>
   )
 }
