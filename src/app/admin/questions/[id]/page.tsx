@@ -178,129 +178,154 @@ export default function EditQuestionPage() {
     'struktur-data': '📊 Struktur Data'
   }
 
-  if (loading) {
+if (loading) {
     return (
-      <div className="flex justify-center py-12">
-        <div className="w-8 h-8 border-2 rounded-full border-emerald-500 border-t-transparent animate-spin" />
+      <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
+        <div className="w-12 h-12 border-2 rounded-full border-orange-500 border-t-transparent animate-spin shadow-[0_0_15px_rgba(249,115,22,0.4)]" />
+        <p className="text-[10px] font-mono tracking-[0.3em] text-orange-500 animate-pulse uppercase">Retrieving_Data_Packet...</p>
       </div>
     )
   }
 
   return (
-    <div>
-      <div className="flex items-center gap-4 mb-6">
+    <div className="max-w-4xl mx-auto space-y-10">
+      {/* HEADER SECTION */}
+      <div className="flex items-center gap-6">
         <Link
           href="/admin/questions"
-          className="p-2 text-gray-400 transition-colors hover:text-white"
+          className="group flex items-center justify-center w-12 h-12 rounded-2xl bg-white/[0.03] border border-white/10 text-gray-500 hover:text-orange-500 hover:border-orange-500/50 transition-all shadow-xl"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
           </svg>
         </Link>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Edit Soal</h1>
-          <p className="mt-1 text-sm text-gray-400">Ubah teks soal atau pilihan jawaban</p>
+          <h1 className="text-3xl italic font-black leading-none tracking-tighter text-white uppercase">
+            Modify<span className="text-orange-500">_Question</span>
+          </h1>
+          <p className="text-[10px] font-mono text-gray-500 mt-2 tracking-widest uppercase italic">Edit_Mode_Active_ID: {questionId.slice(0, 8)}...</p>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="max-w-3xl space-y-6">
-        {/* Status */}
-        <div className="p-6 border rounded-xl bg-white/5 border-white/10">
-          <label className="flex items-center gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={formData.is_active}
-              onChange={(e) => setFormData(prev => ({ ...prev, is_active: e.target.checked }))}
-              className="w-4 h-4 bg-transparent rounded border-white/20 checked:bg-emerald-500"
-            />
-            <span className="text-sm">Soal Aktif (akan muncul di quiz)</span>
-          </label>
-        </div>
-
-        {/* Pilih Topik */}
-        <div className="p-6 border rounded-xl bg-white/5 border-white/10">
-          <label className="block mb-2 text-sm font-medium">Pilih Topik</label>
-          <select
-            value={formData.topic_id}
-            onChange={(e) => setFormData(prev => ({ ...prev, topic_id: e.target.value }))}
-            className="w-full px-4 py-2 text-white border rounded-lg bg-black/50 border-white/10 focus:outline-none focus:border-emerald-500"
-            required
-          >
-            {Object.entries(topicsByModule).map(([moduleId, moduleTopics]) => (
-              <optgroup key={moduleId} label={moduleNames[moduleId] || moduleId}>
-                {moduleTopics.map(topic => (
-                  <option key={topic.id} value={topic.id}>{topic.title}</option>
-                ))}
-              </optgroup>
-            ))}
-          </select>
-        </div>
-
-        {/* Teks Soal */}
-        <div className="p-6 border rounded-xl bg-white/5 border-white/10">
-          <label className="block mb-2 text-sm font-medium">Teks Soal</label>
-          <textarea
-            value={formData.question_text}
-            onChange={(e) => setFormData(prev => ({ ...prev, question_text: e.target.value }))}
-            rows={4}
-            className="w-full px-4 py-2 text-white border rounded-lg bg-black/50 border-white/10 focus:outline-none focus:border-emerald-500"
-            required
-          />
-        </div>
-
-        {/* Pilihan Jawaban */}
-        <div className="p-6 border rounded-xl bg-white/5 border-white/10">
-          <label className="block mb-4 text-sm font-medium">Pilihan Jawaban</label>
-          <div className="space-y-3">
-            {formData.options.map((opt, idx) => (
-              <div key={opt.label} className="flex items-center gap-3">
-                <div className={`
-                  w-10 h-10 flex items-center justify-center rounded-lg font-bold text-sm
-                  ${opt.is_correct 
-                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
-                    : 'bg-white/10 text-gray-400'
-                  }
-                `}>
-                  {opt.label}
-                </div>
-                <input
-                  type="text"
-                  value={opt.text}
-                  onChange={(e) => updateOption(idx, e.target.value)}
-                  className="flex-1 px-4 py-2 text-white border rounded-lg bg-black/50 border-white/10 focus:outline-none focus:border-emerald-500"
-                  placeholder={`Pilihan ${opt.label}`}
-                />
+      <form onSubmit={handleSubmit} className="pb-20 space-y-6">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+          
+          {/* LEFT SIDE: CONTROL PANEL */}
+          <div className="space-y-6 md:col-span-1">
+            <div className="p-6 border rounded-[2rem] bg-[#080808] border-white/5 space-y-6 shadow-2xl relative overflow-hidden">
+               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-600 to-transparent opacity-30" />
+              
+              {/* Toggle Status */}
+              <div>
+                <label className="block mb-4 text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">Deployment_Status</label>
                 <button
                   type="button"
-                  onClick={() => setCorrectOption(opt.label)}
-                  className={`px-3 py-2 rounded-lg text-sm transition-colors ${
-                    opt.is_correct
-                      ? 'bg-emerald-600 text-white'
-                      : 'bg-white/10 text-gray-400 hover:bg-white/20'
+                  onClick={() => setFormData(prev => ({ ...prev, is_active: !prev.is_active }))}
+                  className={`w-full flex items-center justify-between px-5 py-4 rounded-2xl border transition-all ${
+                    formData.is_active 
+                    ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' 
+                    : 'bg-red-500/10 border-red-500/20 text-red-500'
                   }`}
                 >
-                  {opt.is_correct ? '✓ Benar' : 'Jadikan Benar'}
+                  <span className="text-[10px] font-black uppercase tracking-widest">
+                    {formData.is_active ? '● Active' : '○ Inactive'}
+                  </span>
+                  <div className={`w-2 h-2 rounded-full animate-pulse ${formData.is_active ? 'bg-emerald-500' : 'bg-red-500'}`} />
                 </button>
               </div>
-            ))}
-          </div>
-        </div>
 
-        {/* Submit Button */}
-        <div className="flex gap-3">
-          <button
-            type="submit"
-            disabled={saving}
-            className="px-6 py-2 text-sm font-medium transition-colors rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50"
-          >
-            {saving ? 'Menyimpan...' : 'Simpan Perubahan'}
-          </button>
-          <Link
-            href="/admin/questions"
-            className="px-6 py-2 text-sm font-medium transition-colors rounded-lg bg-white/10 hover:bg-white/20"
-          >
-            Batal
-          </Link>
+              {/* Select Topic */}
+              <div>
+                <label className="block mb-3 text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">Reclassify_Topic</label>
+                <select
+                  value={formData.topic_id}
+                  onChange={(e) => setFormData(prev => ({ ...prev, topic_id: e.target.value }))}
+                  className="w-full px-4 py-3 text-xs font-bold text-white border rounded-xl bg-white/[0.02] border-white/10 focus:outline-none focus:border-orange-500 transition-all appearance-none cursor-pointer"
+                  required
+                >
+                  {Object.entries(topicsByModule).map(([moduleId, moduleTopics]) => (
+                    <optgroup key={moduleId} label={moduleNames[moduleId]?.toUpperCase() || moduleId.toUpperCase()} className="bg-[#0a0a0a] text-gray-500 font-mono text-[10px]">
+                      {moduleTopics.map(topic => (
+                        <option key={topic.id} value={topic.id} className="text-xs text-white">{topic.title}</option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* RIGHT SIDE: EDITOR */}
+          <div className="space-y-6 md:col-span-2">
+            {/* Question Textarea */}
+            <div className="p-8 border rounded-[2.5rem] bg-[#080808] border-white/5 shadow-2xl">
+              <label className="block mb-4 text-[10px] font-black text-orange-500/80 uppercase tracking-[0.2em]">Source_Content</label>
+              <textarea
+                value={formData.question_text}
+                onChange={(e) => setFormData(prev => ({ ...prev, question_text: e.target.value }))}
+                rows={5}
+                className="w-full px-6 py-5 text-sm font-medium text-white border rounded-[1.5rem] bg-black/40 border-white/5 focus:outline-none focus:border-orange-500/50 focus:bg-black/60 transition-all leading-relaxed"
+                required
+              />
+            </div>
+
+            {/* Options Management */}
+            <div className="p-8 border rounded-[2.5rem] bg-[#080808] border-white/5 shadow-2xl">
+              <label className="block mb-6 text-[10px] font-black text-orange-500/80 uppercase tracking-[0.2em]">Response_Variants</label>
+              <div className="space-y-4">
+                {formData.options.map((opt, idx) => (
+                  <div key={opt.label} className="flex items-center gap-4 group">
+                    <div className={`
+                      w-12 h-12 flex items-center justify-center rounded-2xl font-black text-xs transition-all duration-300
+                      ${opt.is_correct 
+                        ? 'bg-orange-600 text-white shadow-[0_0_20px_rgba(234,88,12,0.4)]' 
+                        : 'bg-white/[0.03] text-gray-600 border border-white/5'
+                      }
+                    `}>
+                      {opt.label}
+                    </div>
+                    <input
+                      type="text"
+                      value={opt.text}
+                      onChange={(e) => updateOption(idx, e.target.value)}
+                      className="flex-1 px-6 py-3.5 text-xs font-bold text-white border rounded-2xl bg-white/[0.02] border-white/5 focus:outline-none focus:border-orange-500/30 transition-all"
+                      placeholder={`Edit option ${opt.label}...`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setCorrectOption(opt.label)}
+                      className={`h-12 px-5 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all ${
+                        opt.is_correct
+                          ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
+                          : 'bg-white/[0.03] text-gray-500 hover:text-white border border-white/5'
+                      }`}
+                    >
+                      {opt.is_correct ? 'Correct' : 'Mark'}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* FORM ACTIONS */}
+            <div className="flex gap-4 pt-4">
+              <button
+                type="submit"
+                disabled={saving}
+                className="flex-1 group relative py-5 overflow-hidden rounded-[1.5rem] bg-orange-600 transition-all hover:bg-orange-500 active:scale-95 disabled:opacity-50 shadow-[0_10px_30px_rgba(234,88,12,0.2)]"
+              >
+                <span className="relative z-10 text-[10px] font-black uppercase tracking-[0.3em] text-white">
+                  {saving ? 'Updating_Core...' : 'Commit_Changes_To_System'}
+                </span>
+              </button>
+              <Link
+                href="/admin/questions"
+                className="px-10 py-5 text-[10px] font-black uppercase tracking-[0.3em] transition-all rounded-[1.5rem] bg-white/5 text-gray-500 hover:bg-white/10 hover:text-white border border-white/5"
+              >
+                Discard
+              </Link>
+            </div>
+          </div>
         </div>
       </form>
     </div>

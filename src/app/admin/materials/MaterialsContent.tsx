@@ -164,123 +164,171 @@ int main() {
 
   if (loading) {
     return (
-      <div className="flex justify-center py-12">
-        <div className="w-8 h-8 border-2 rounded-full border-emerald-500 border-t-transparent animate-spin" />
+      <div className="flex flex-col items-center justify-center gap-4 py-24">
+        <div className="w-12 h-12 border-2 rounded-full border-orange-500 border-t-transparent animate-spin shadow-[0_0_15px_rgba(249,115,22,0.3)]" />
+        <p className="text-[10px] font-mono tracking-[0.3em] text-orange-500 animate-pulse uppercase">Syncing_Content_Nodes...</p>
       </div>
     )
   }
 
   return (
-    <div className="flex gap-6">
-      {/* Sidebar Topics - same as before */}
-      <div className="w-64 shrink-0">
-        <div className="sticky top-8">
-          <h2 className="mb-3 text-sm font-medium text-gray-400">Daftar Topik</h2>
-          <div className="space-y-1">
+    <div className="flex flex-col items-start gap-8 lg:flex-row">
+      
+      {/* LEFT SIDEBAR: TOPIC EXPLORER */}
+      <div className="w-full space-y-4 lg:w-72 shrink-0">
+        <div className="p-6 border rounded-[2rem] bg-[#080808] border-white/5 shadow-2xl overflow-hidden relative">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-600 to-transparent opacity-20" />
+          <h2 className="mb-6 text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] px-2">Topic_Explorer</h2>
+          
+          <div className="space-y-6">
             {Object.entries(topicsByModule).map(([moduleId, moduleTopics]) => (
-              <div key={moduleId} className="mb-3">
-                <div className="px-3 py-2 text-xs text-gray-500">
+              <div key={moduleId} className="space-y-2">
+                <div className="px-4 py-1 text-[9px] font-mono text-orange-500/50 uppercase tracking-widest border-l border-orange-500/20">
                   {moduleNames[moduleId] || moduleId}
                 </div>
-                {moduleTopics.map(topic => (
-                  <button
-                    key={topic.id}
-                    onClick={() => handleTopicSelect(topic)}
-                    className={`
-                      w-full text-left px-3 py-2 rounded-lg text-sm transition-all
-                      ${selectedTopic?.id === topic.id
-                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
-                        : 'text-gray-400 hover:bg-white/5 hover:text-white'
-                      }
-                    `}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span>{topic.title}</span>
-                      {materials.has(topic.id) && (
-                        <span className="text-xs text-emerald-400">✓</span>
-                      )}
-                    </div>
-                  </button>
-                ))}
+                <div className="space-y-1">
+                  {moduleTopics.map(topic => (
+                    <button
+                      key={topic.id}
+                      onClick={() => handleTopicSelect(topic)}
+                      className={`
+                        w-full text-left px-4 py-3 rounded-xl text-xs font-bold transition-all group relative overflow-hidden
+                        ${selectedTopic?.id === topic.id
+                          ? 'bg-orange-600 text-white shadow-[0_0_20px_rgba(234,88,12,0.2)]'
+                          : 'text-gray-500 hover:bg-white/[0.03] hover:text-gray-300'
+                        }
+                      `}
+                    >
+                      <div className="relative z-10 flex items-center justify-between">
+                        <span className="pr-2 truncate">{topic.title}</span>
+                        {materials.has(topic.id) && (
+                          <span className={`text-[10px] transition-colors ${selectedTopic?.id === topic.id ? 'text-white' : 'text-emerald-500'}`}>
+                            {selectedTopic?.id === topic.id ? '●' : '✓'}
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      {/* Editor Panel */}
-      <div className="flex-1 space-y-6">
-        {selectedTopic && (
+      {/* RIGHT PANEL: CORE EDITOR */}
+      <div className="flex-1 w-full space-y-6">
+        {selectedTopic ? (
           <>
-            <div className="p-4 border rounded-xl bg-white/5 border-white/10">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-xl font-semibold">{selectedTopic.title}</h2>
-                  <p className="text-sm text-gray-500">
-                    Module: {moduleNames[selectedTopic.module_id] || selectedTopic.module_id}
-                  </p>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setShowPreview(!showPreview)}
-                    className="px-3 py-1.5 text-sm bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
-                  >
-                    {showPreview ? 'Edit' : 'Preview'}
-                  </button>
-                  <button
-                    onClick={handleSave}
-                    disabled={saving}
-                    className="px-4 py-1.5 text-sm bg-emerald-600 hover:bg-emerald-500 rounded-lg transition-colors disabled:opacity-50"
-                  >
-                    {saving ? 'Menyimpan...' : 'Simpan'}
-                  </button>
-                </div>
+            {/* EDITOR HEADER */}
+            <div className="p-6 border rounded-[2rem] bg-[#080808] border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xl">
+              <div>
+                <span className="text-[9px] font-mono text-orange-500 uppercase tracking-[0.2em]">Editing_Module: {selectedTopic.module_id}</span>
+                <h2 className="mt-1 text-xl italic font-black leading-none tracking-tighter text-white uppercase">{selectedTopic.title}</h2>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setShowPreview(!showPreview)}
+                  className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border ${
+                    showPreview 
+                    ? 'bg-white text-black border-white' 
+                    : 'bg-white/5 text-gray-400 border-white/10 hover:bg-white/10'
+                  }`}
+                >
+                  {showPreview ? 'Write_Mode' : 'Preview_Mode'}
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest bg-orange-600 text-white hover:bg-orange-500 transition-all disabled:opacity-50 shadow-[0_0_20px_rgba(234,88,12,0.2)]"
+                >
+                  {saving ? 'Saving...' : 'Push_To_Cloud'}
+                </button>
               </div>
             </div>
 
-            {showPreview ? (
-              <div className="p-6 border rounded-xl bg-white/5 border-white/10">
-                <h3 className="mb-3 text-sm font-medium text-gray-400">Preview Materi</h3>
-                <div 
-                  className="prose prose-invert max-w-none"
-                  dangerouslySetInnerHTML={{ __html: editContent }}
-                />
-                {editSolutionCode && (
-                  <div className="mt-6">
-                    <h3 className="mb-3 text-sm font-medium text-gray-400">Kode Solusi</h3>
-                    <pre className="p-4 overflow-x-auto rounded-lg bg-black/50">
-                      <code className="text-sm text-emerald-400">{editSolutionCode}</code>
-                    </pre>
+{showPreview ? (
+  /* PREVIEW MODE - ANTI-OVERFLOW VERSION */
+  <div className="min-w-0 flex-1 p-6 md:p-10 border rounded-[2.5rem] bg-[#080808] border-white/5 shadow-2xl relative overflow-hidden">
+    {/* Penahan agar konten tidak keluar jalur */}
+    <div className="absolute top-0 right-0 p-6 text-[8px] font-mono text-gray-700 uppercase tracking-widest hidden md:block">
+      Render_Engine_v2.1
+    </div>
+    
+    <div className="relative z-10 w-full overflow-x-hidden">
+      <div 
+        className="
+          w-full
+          text-gray-300 
+          break-words 
+          [word-break:break-word]
+          [&>h2]:text-xl [&>h2]:md:text-2xl [&>h2]:font-black [&>h2]:italic [&>h2]:tracking-tighter [&>h2]:uppercase [&>h2]:text-white [&>h2]:mb-4 [&>h2]:mt-8
+          [&>h3]:text-base [&>h3]:md:text-lg [&>h3]:font-bold [&>h3]:text-orange-500 [&>h3]:mb-3 [&>h3]:mt-6
+          [&>p]:text-sm [&>p]:text-gray-400 [&>p]:mb-4 [&>p]:leading-relaxed
+          [&>pre]:bg-black/60 [&>pre]:p-4 [&>pre]:md:p-6 [&>pre]:rounded-2xl [&>pre]:border [&>pre]:border-white/5 [&>pre]:my-6 
+          [&>pre]:overflow-x-auto [&>pre]:max-w-full
+          [&>pre>code]:text-[10px] [&>pre>code]:md:text-xs [&>pre>code]:font-mono [&>pre>code]:text-orange-300 [&>pre>code]:whitespace-pre-wrap [&>pre>code]:break-all
+          [&>ul]:list-disc [&>ul]:ml-5 [&>ul]:mb-4 [&>ul]:text-sm [&>ul]:text-gray-400
+        "
+        dangerouslySetInnerHTML={{ __html: editContent }}
+      />
+
+      {/* Solution Section */}
+      {editSolutionCode && (
+        <div className="mt-12 pt-8 border-t border-white/10 border-dashed w-full overflow-hidden">
+          <h3 className="mb-4 text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em] text-center md:text-left">
+            Reference_Solution
+          </h3>
+          <pre className="p-4 md:p-6 overflow-x-auto rounded-[1.5rem] bg-black/80 border border-emerald-500/20 w-full">
+            <code className="text-[10px] md:text-xs font-mono text-emerald-400/90 leading-relaxed whitespace-pre-wrap break-all">
+              {editSolutionCode}
+            </code>
+          </pre>
+        </div>
+      )}
+    </div>
+  </div>
+) : (
+              /* EDIT MODE */
+              <div className="space-y-6">
+                <div className="relative group">
+                  <div className="absolute -top-3 left-8 px-3 py-1 bg-[#080808] border border-white/10 rounded-full z-10">
+                    <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">HTML_Structure</span>
                   </div>
-                )}
-              </div>
-            ) : (
-              <>
-                <div className="p-6 border rounded-xl bg-white/5 border-white/10">
-                  <label className="block mb-3 text-sm font-medium">Konten Materi (HTML)</label>
                   <textarea
                     value={editContent}
                     onChange={(e) => setEditContent(e.target.value)}
-                    rows={15}
-                    className="w-full px-4 py-3 font-mono text-sm text-white border rounded-lg bg-black/50 border-white/10 focus:outline-none focus:border-emerald-500"
+                    rows={18}
+                    className="w-full px-8 py-10 font-mono text-xs leading-loose text-gray-300 border rounded-[2.5rem] bg-[#080808] border-white/5 focus:outline-none focus:border-orange-500/30 focus:bg-black/40 transition-all shadow-inner"
+                    placeholder="Enter lesson content here..."
                   />
-                  <p className="mt-2 text-xs text-gray-500">
-                    Gunakan tag HTML: &lt;h2&gt;, &lt;p&gt;, &lt;pre&gt;&lt;code&gt;, dll.
-                  </p>
                 </div>
 
-                <div className="p-6 border rounded-xl bg-white/5 border-white/10">
-                  <label className="block mb-3 text-sm font-medium">Kode Solusi (opsional)</label>
+                <div className="relative group">
+                  <div className="absolute -top-3 left-8 px-3 py-1 bg-[#080808] border border-white/10 rounded-full z-10">
+                    <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Solution_Code</span>
+                  </div>
                   <textarea
                     value={editSolutionCode}
                     onChange={(e) => setEditSolutionCode(e.target.value)}
                     rows={8}
-                    className="w-full px-4 py-3 font-mono text-sm text-white border rounded-lg bg-black/50 border-white/10 focus:outline-none focus:border-emerald-500"
+                    className="w-full px-8 py-10 font-mono text-xs text-emerald-500/80 border rounded-[2.5rem] bg-[#080808] border-white/5 focus:outline-none focus:border-emerald-500/20 focus:bg-black/40 transition-all"
+                    placeholder="// Paste the correct C++ solution here..."
                   />
                 </div>
-              </>
+              </div>
             )}
           </>
+        ) : (
+          /* EMPTY STATE */
+          <div className="h-[60vh] flex flex-col items-center justify-center border-2 border-dashed border-white/5 rounded-[3rem] bg-white/[0.01]">
+            <div className="w-16 h-16 rounded-2xl bg-white/[0.03] flex items-center justify-center mb-6 border border-white/5">
+              <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+            </div>
+            <p className="text-[10px] font-mono text-gray-600 uppercase tracking-[0.3em] animate-pulse">Select_Topic_To_Begin_Editing</p>
+          </div>
         )}
       </div>
     </div>

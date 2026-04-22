@@ -263,133 +263,197 @@ export default function StudentDetailPage() {
     progressByModule[p.module_title].push(p)
   })
 
-  return (
-    <div>
-      {/* Back Button */}
-      <div className="mb-6">
-        <Link
-          href="/admin/students"
-          className="inline-flex items-center gap-2 text-gray-400 transition-colors hover:text-white"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-          </svg>
-          Kembali ke Daftar Siswa
-        </Link>
+return (
+    <div className="space-y-10 duration-700 animate-in fade-in slide-in-from-bottom-4">
+      
+      {/* HEADER & NAVIGATION */}
+      <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
+        <div className="space-y-1">
+          <Link
+            href="/admin/students"
+            className="group flex items-center gap-2 text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] hover:text-orange-500 transition-colors"
+          >
+            <svg className="w-4 h-4 transition-transform group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Back_to_Registry
+          </Link>
+          <h1 className="text-4xl italic font-black leading-none tracking-tighter text-white uppercase">
+            Student<span className="text-orange-500">_Analysis</span>
+          </h1>
+        </div>
+        
+        <div className="flex gap-4">
+          <div className="px-6 py-3 border border-white/5 bg-[#080808] rounded-2xl">
+             <p className="text-[8px] font-mono text-gray-600 uppercase tracking-widest leading-none mb-1">Status_Node</p>
+             <p className="text-xs font-black tracking-widest uppercase text-emerald-500">Active_Session</p>
+          </div>
+        </div>
       </div>
 
-      {/* Student Info */}
-      <div className="grid gap-6 mb-8 md:grid-cols-3">
-        <div className="p-6 border md:col-span-2 rounded-xl bg-white/5 border-white/10">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="flex items-center justify-center w-16 h-16 rounded-full bg-emerald-500/20">
-              <span className="text-2xl text-emerald-400">
+      {/* STUDENT PROFILE CARD */}
+      <div className="grid gap-6 md:grid-cols-4">
+        <div className="md:col-span-3 p-8 border rounded-[2.5rem] bg-[#080808] border-white/5 relative overflow-hidden shadow-2xl">
+          <div className="absolute top-0 right-0 p-8 opacity-5">
+             <svg className="w-32 h-32 text-white" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+             </svg>
+          </div>
+          
+          <div className="relative z-10 flex flex-col items-start gap-8 md:flex-row md:items-center">
+            <div className="relative group">
+              <div className="absolute transition-all bg-orange-600 -inset-1 rounded-3xl blur opacity-20 group-hover:opacity-40" />
+              <div className="relative flex items-center justify-center w-24 h-24 text-4xl italic font-black text-white shadow-2xl rounded-3xl bg-gradient-to-br from-orange-600 to-orange-900">
                 {student.full_name.charAt(0).toUpperCase()}
-              </span>
+              </div>
             </div>
-            <div>
-              <h1 className="text-2xl font-bold">{student.full_name}</h1>
-              <p className="text-gray-400">{student.email}</p>
+            
+            <div className="space-y-2">
+              <h2 className="text-3xl italic font-black leading-none tracking-tighter text-white uppercase">
+                {student.full_name}
+              </h2>
+              <div className="flex flex-wrap items-center gap-4">
+                <span className="font-mono text-xs text-gray-500">{student.email}</span>
+                <span className="w-1 h-1 rounded-full bg-white/10" />
+                <span className="text-[10px] font-mono text-orange-500/80 uppercase tracking-widest border border-orange-500/20 px-2 py-0.5 rounded">
+                  Student_UID: {student.id.slice(0,8)}
+                </span>
+              </div>
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-4 pt-4 border-t border-white/10">
+
+          <div className="grid grid-cols-2 gap-8 pt-8 mt-12 border-t md:grid-cols-4 border-white/5">
             <div>
-              <p className="text-xs text-gray-500">Bergabung</p>
-              <p className="text-sm text-white">{formatDate(student.created_at)}</p>
+              <p className="text-[9px] font-mono text-gray-600 uppercase tracking-widest mb-1">Registration_Date</p>
+              <p className="text-xs font-bold text-white uppercase">{formatDate(student.created_at)}</p>
             </div>
             <div>
-              <p className="text-xs text-gray-500">Progress Overall</p>
-              <p className="text-sm text-emerald-400">{overallProgress}%</p>
+              <p className="text-[9px] font-mono text-gray-600 uppercase tracking-widest mb-1">Total_Engagement</p>
+              <p className="text-xs font-bold uppercase text-emerald-500">{overallProgress}% Completion</p>
             </div>
             <div>
-              <p className="text-xs text-gray-500">Rata-rata Quiz</p>
-              <p className="text-sm text-blue-400">{avgScore}%</p>
+              <p className="text-[9px] font-mono text-gray-600 uppercase tracking-widest mb-1">Cognitive_Score</p>
+              <p className="text-xs font-bold text-blue-400 uppercase">{avgScore}% Accuracy</p>
+            </div>
+             <div>
+              <p className="text-[9px] font-mono text-gray-600 uppercase tracking-widest mb-1">Learning_Tier</p>
+              <p className="text-xs font-bold text-white uppercase">{overallProgress > 50 ? 'Advanced' : 'Novice'}</p>
             </div>
           </div>
         </div>
 
-        <div className="p-6 border rounded-xl bg-white/5 border-white/10">
-          <div className="text-center">
-            <div className="mb-2 text-3xl font-bold text-emerald-400">{completedTopics}</div>
-            <p className="text-sm text-gray-400">Topik Selesai</p>
-            <div className="h-2 mt-4 overflow-hidden rounded-full bg-white/10">
-              <div 
-                className="h-full transition-all rounded-full bg-emerald-500"
-                style={{ width: `${(completedTopics / totalTopics) * 100}%` }}
-              />
-            </div>
-            <p className="mt-2 text-xs text-gray-500">dari {totalTopics} topik</p>
-          </div>
+        {/* PROGRESS CIRCLE CARD */}
+        <div className="p-8 border rounded-[2.5rem] bg-[#080808] border-white/5 flex flex-col items-center justify-center text-center shadow-xl">
+           <div className="relative flex items-center justify-center w-32 h-32 mb-4">
+              <svg className="w-full h-full -rotate-90">
+                <circle cx="64" cy="64" r="58" fill="transparent" stroke="rgba(255,255,255,0.03)" strokeWidth="8" />
+                <circle 
+                  cx="64" cy="64" r="58" fill="transparent" stroke="url(#orangeGradient)" strokeWidth="8" 
+                  strokeDasharray={364.4}
+                  strokeDashoffset={364.4 - (364.4 * overallProgress) / 100}
+                  strokeLinecap="round"
+                  className="transition-all duration-1000 ease-out"
+                />
+                <defs>
+                  <linearGradient id="orangeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="#ea580c" />
+                    <stop offset="100%" stopColor="#fb923c" />
+                  </linearGradient>
+                </defs>
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-2xl font-black leading-none text-white">{completedTopics}</span>
+                <span className="text-[8px] font-mono text-gray-600 uppercase tracking-widest">Topics</span>
+              </div>
+           </div>
+           <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">Curriculum_Progress</p>
         </div>
       </div>
 
-      {/* Progress Detail */}
-      <div className="mb-8">
-        <h2 className="mb-4 text-xl font-semibold">Progress Per Topik</h2>
-        {progress.length === 0 ? (
-          <div className="p-6 text-center border rounded-xl bg-white/5 border-white/10">
-            <p className="text-gray-400">Belum ada data progress</p>
-          </div>
-        ) : (
-          <div className="space-y-6">
+      {/* TOPIC BREAKDOWN */}
+      <div className="grid gap-8 lg:grid-cols-2">
+        <div className="space-y-6">
+          <h2 className="text-sm font-black text-white uppercase tracking-[0.3em] flex items-center gap-4">
+            Module_Breakdown
+            <div className="h-[1px] flex-1 bg-white/5" />
+          </h2>
+          
+          <div className="space-y-4">
             {Object.entries(progressByModule).map(([moduleTitle, topics]) => (
-              <div key={moduleTitle} className="p-4 border rounded-xl bg-white/5 border-white/10">
-                <h3 className="mb-3 font-medium text-gray-300 text-md">{moduleTitle}</h3>
-                <div className="space-y-2">
+              <div key={moduleTitle} className="border border-white/5 rounded-3xl bg-[#080808] overflow-hidden group hover:border-white/10 transition-colors">
+                <div className="px-6 py-4 bg-white/[0.02] border-b border-white/5 flex justify-between items-center">
+                  <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest italic">{moduleTitle}</h3>
+                  <span className="text-[8px] font-mono text-gray-600">{topics.length} Nodes</span>
+                </div>
+                <div className="p-6 space-y-3">
                   {topics.map(topic => (
-                    <div key={topic.topic_id} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
-                      <span className="text-sm text-gray-300">{topic.topic_title}</span>
-                      {getStatusBadge(topic.status, topic.best_score)}
+                    <div key={topic.topic_id} className="flex items-center justify-between group/item">
+                      <span className="text-xs text-gray-500 transition-colors group-hover/item:text-gray-300">{topic.topic_title}</span>
+                      {topic.status === 'completed' ? (
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-mono text-emerald-500">{topic.best_score}%</span>
+                          <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                        </div>
+                      ) : topic.status === 'unlocked' ? (
+                        <div className="w-2 h-2 rounded-full bg-blue-500/30" />
+                      ) : (
+                        <div className="w-2 h-2 rounded-full bg-white/5" />
+                      )}
                     </div>
                   ))}
                 </div>
               </div>
             ))}
           </div>
-        )}
-      </div>
+        </div>
 
-      {/* Quiz History */}
-      <div>
-        <h2 className="mb-4 text-xl font-semibold">Riwayat Quiz</h2>
-        {attempts.length === 0 ? (
-          <div className="p-6 text-center border rounded-xl bg-white/5 border-white/10">
-            <p className="text-gray-400">Belum ada quiz yang dikerjakan</p>
+        {/* QUIZ LOG */}
+        <div className="space-y-6">
+          <h2 className="text-sm font-black text-white uppercase tracking-[0.3em] flex items-center gap-4">
+            Recent_Attempts
+            <div className="h-[1px] flex-1 bg-white/5" />
+          </h2>
+
+          <div className="border rounded-[2.5rem] bg-[#080808] border-white/5 overflow-hidden shadow-2xl">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b border-white/5 bg-white/[0.02]">
+                    <th className="px-6 py-4 text-[9px] font-black text-gray-600 uppercase tracking-widest">Topic</th>
+                    <th className="px-6 py-4 text-[9px] font-black text-gray-600 uppercase tracking-widest text-center">Score</th>
+                    <th className="px-6 py-4 text-[9px] font-black text-gray-600 uppercase tracking-widest text-right">Timestamp</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {attempts.map((attempt) => (
+                    <tr key={attempt.id} className="group hover:bg-white/[0.01] transition-colors">
+                      <td className="px-6 py-5 text-xs font-medium text-white transition-colors group-hover:text-orange-500">{attempt.topic_title}</td>
+                      <td className="px-6 py-5 text-center">
+                        <span className={`text-[10px] font-mono px-2 py-1 rounded border ${
+                          attempt.passed 
+                          ? 'text-emerald-500 border-emerald-500/20 bg-emerald-500/5' 
+                          : 'text-red-500 border-red-500/20 bg-red-500/5'
+                        }`}>
+                          {attempt.score}%
+                        </span>
+                      </td>
+                      <td className="px-6 py-5 text-right text-[10px] font-mono text-gray-600 uppercase">
+                        {formatDate(attempt.attempted_at)}
+                      </td>
+                    </tr>
+                  ))}
+                  {attempts.length === 0 && (
+                    <tr>
+                      <td colSpan={3} className="px-6 py-12 text-center text-[10px] font-mono text-gray-700 uppercase tracking-widest">
+                        Data_Buffer_Empty
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="border-b border-white/10">
-                <tr className="text-xs text-left text-gray-500">
-                  <th className="pb-3 font-medium">Topik</th>
-                  <th className="pb-3 font-medium">Skor</th>
-                  <th className="pb-3 font-medium">Status</th>
-                  <th className="pb-3 font-medium">Tanggal</th>
-                 </tr>
-              </thead>
-              <tbody>
-                {attempts.map((attempt) => (
-                  <tr key={attempt.id} className="border-b border-white/5">
-                    <td className="py-3 text-sm text-white">{attempt.topic_title}</td>
-                    <td className="py-3">
-                      <span className={`text-sm font-medium ${attempt.score >= 70 ? 'text-emerald-400' : 'text-red-400'}`}>
-                        {attempt.score}%
-                      </span>
-                    </td>
-                    <td className="py-3">
-                      {attempt.passed ? (
-                        <span className="px-2 py-1 text-xs rounded-full bg-emerald-500/20 text-emerald-400">Lulus</span>
-                      ) : (
-                        <span className="px-2 py-1 text-xs text-red-400 rounded-full bg-red-500/20">Tidak Lulus</span>
-                      )}
-                    </td>
-                    <td className="py-3 text-sm text-gray-400">{formatDate(attempt.attempted_at)}</td>
-                   </tr>
-                ))}
-              </tbody>
-             </table>
-          </div>
-        )}
+        </div>
       </div>
     </div>
   )

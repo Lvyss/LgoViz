@@ -222,3 +222,4 @@ function ModuleCard({ module, index }: { module: Module, index: number }) {
     </motion.div>
   )
 }
+

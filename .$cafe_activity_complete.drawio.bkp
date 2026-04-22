@@ -1,0 +1,304 @@
+<mxfile host="app.diagrams.net" modified="2026-04-21T00:00:00.000Z" agent="DrawIO" version="24.0.0" type="device">
+  <diagram name="Activity Diagram Cafe" id="activity-cafe">
+    <mxGraphModel dx="1422" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="1600" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <!-- SWIMLANES -->
+        <mxCell id="lane_kasir" value="Kasir / Admin / Barista" style="swimlane;startSize=30;horizontal=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="1100" height="800" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="lane_pemilik" value="Pemilik Café" style="swimlane;startSize=30;horizontal=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="40" y="860" width="1100" height="300" as="geometry"/>
+        </mxCell>
+
+        <!-- START NODE -->
+        <mxCell id="start" value="" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#000000;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="565" y="60" width="30" height="30" as="geometry"/>
+        </mxCell>
+
+        <!-- LOGIN SECTION -->
+        <mxCell id="act_buka_app" value="Buka aplikasi sistem" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="525" y="110" width="120" height="40" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="act_input_username" value="Input username &amp; password" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="525" y="170" width="120" height="40" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="act_validasi" value="Validasi kredensial&#xa;Cek data user" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="525" y="230" width="120" height="50" as="geometry"/>
+        </mxCell>
+
+        <!-- DECISION: Valid? -->
+        <mxCell id="dec_valid" value="Valid?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="535" y="300" width="100" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- ERROR BRANCH -->
+        <mxCell id="act_error" value="Error: JAK" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="700" y="305" width="100" height="50" as="geometry"/>
+        </mxCell>
+
+        <!-- BACK TO INPUT FROM ERROR -->
+        <mxCell id="act_dashboard" value="Akses dashboard (role)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="525" y="390" width="120" height="40" as="geometry"/>
+        </mxCell>
+
+        <!-- TRANSACTION SECTION -->
+        <mxCell id="act_input_pesanan" value="Input pesanan pelanggan" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="525" y="460" width="120" height="40" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="act_ambil_harga" value="Ambil harga dari menu&#xa;Cek stok tersedia" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="525" y="520" width="120" height="50" as="geometry"/>
+        </mxCell>
+
+        <!-- DECISION: Stok cukup? -->
+        <mxCell id="dec_stok" value="Stok&#xa;cukup?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="535" y="590" width="100" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- NOTIF STOK TIDAK CUKUP -->
+        <mxCell id="act_notif_stok" value="Notif stok&#xa;tidak cukup" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="700" y="600" width="100" height="40" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="act_hitung_total" value="Hitung total pembayaran" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="525" y="680" width="120" height="40" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="act_tampil_total" value="Tampil total ke kasir" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="525" y="740" width="120" height="40" as="geometry"/>
+        </mxCell>
+
+        <!-- DECISION: Ada diskon? -->
+        <mxCell id="dec_diskon" value="Ada&#xa;diskon?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="535" y="800" width="100" height="60" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="act_terapkan_diskon" value="Terapkan diskon" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="700" y="810" width="100" height="40" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="act_terima_bayar" value="Terima &amp; konfirmasi bayar" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="525" y="880" width="120" height="40" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="act_simpan_transaksi" value="Simpan data transaksi" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="525" y="940" width="120" height="40" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="act_update_stok" value="Update stok otomatis" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="525" y="1000" width="120" height="40" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="act_cetak_struk" value="Cetak struk pembayaran" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="525" y="1060" width="120" height="40" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="act_kirim_order" value="Kirim detail order&#xa;ke barista" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="525" y="1120" width="120" height="50" as="geometry"/>
+        </mxCell>
+
+        <!-- BARISTA SECTION -->
+        <mxCell id="act_terima_pesanan" value="Terima &amp; buat pesanan" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="525" y="1190" width="120" height="40" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="act_lihat_dashboard" value="Lihat dashboard" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="525" y="1250" width="120" height="40" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="act_update_status" value="Update status selesai" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="525" y="1310" width="120" height="40" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="act_simpan_status" value="Simpan status order" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="525" y="1370" width="120" height="40" as="geometry"/>
+        </mxCell>
+
+        <!-- PEMILIK SECTION -->
+        <mxCell id="act_generate_laporan" value="Generate laporan" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="525" y="900" width="120" height="40" as="geometry"/>
+        </mxCell>
+
+        <!-- LOGOUT -->
+        <mxCell id="act_logout" value="Logout sistem" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="525" y="1440" width="120" height="40" as="geometry"/>
+        </mxCell>
+
+        <!-- END NODE -->
+        <mxCell id="end" value="" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#000000;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="565" y="1500" width="30" height="30" as="geometry"/>
+        </mxCell>
+
+        <!-- FLOW CONNECTIONS -->
+        <mxCell id="flow_start_buka" edge="1" parent="1" source="start" target="act_buka_app">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="flow_buka_input" edge="1" parent="1" source="act_buka_app" target="act_input_username">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="flow_input_validasi" edge="1" parent="1" source="act_input_username" target="act_validasi">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="flow_validasi_dec" edge="1" parent="1" source="act_validasi" target="dec_valid">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Valid = Ya -->
+        <mxCell id="flow_dec_ya" value="Ya" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=classic;" edge="1" parent="1" source="dec_valid" target="act_dashboard">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="585" y="360" as="sourcePoint"/>
+            <mxPoint x="585" y="390" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Valid = Tidak (Error) -->
+        <mxCell id="flow_dec_tidak" value="Tidak" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=classic;" edge="1" parent="1" source="dec_valid" target="act_error">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Error back to input -->
+        <mxCell id="flow_error_back" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=classic;dashed=1;" edge="1" parent="1" source="act_error" target="act_input_username">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="750" y="190"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="flow_dashboard_input" edge="1" parent="1" source="act_dashboard" target="act_input_pesanan">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="flow_input_ambil" edge="1" parent="1" source="act_input_pesanan" target="act_ambil_harga">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="flow_ambil_dec_stok" edge="1" parent="1" source="act_ambil_harga" target="dec_stok">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Stok cukup = Ya -->
+        <mxCell id="flow_stok_ya" value="Ya" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=classic;" edge="1" parent="1" source="dec_stok" target="act_hitung_total">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="585" y="650" as="sourcePoint"/>
+            <mxPoint x="585" y="680" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Stok tidak cukup -->
+        <mxCell id="flow_stok_tidak" value="Tidak" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=classic;" edge="1" parent="1" source="dec_stok" target="act_notif_stok">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="flow_notif_back" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=classic;dashed=1;" edge="1" parent="1" source="act_notif_stok" target="act_input_pesanan">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="750" y="480"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="flow_hitung_tampil" edge="1" parent="1" source="act_hitung_total" target="act_tampil_total">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="flow_tampil_dec_diskon" edge="1" parent="1" source="act_tampil_total" target="dec_diskon">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Ada diskon = Ya -->
+        <mxCell id="flow_diskon_ya" value="Ya" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=classic;" edge="1" parent="1" source="dec_diskon" target="act_terapkan_diskon">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Kembali dari diskon ke terima bayar -->
+        <mxCell id="flow_diskon_kembali" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=classic;" edge="1" parent="1" source="act_terapkan_diskon" target="act_terima_bayar">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="750" y="900"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Ada diskon = Tidak -->
+        <mxCell id="flow_diskon_tidak" value="Tidak" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=classic;" edge="1" parent="1" source="dec_diskon" target="act_terima_bayar">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="585" y="860" as="sourcePoint"/>
+            <mxPoint x="585" y="880" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="flow_terima_simpan" edge="1" parent="1" source="act_terima_bayar" target="act_simpan_transaksi">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="flow_simpan_update" edge="1" parent="1" source="act_simpan_transaksi" target="act_update_stok">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="flow_update_cetak" edge="1" parent="1" source="act_update_stok" target="act_cetak_struk">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="flow_cetak_kirim" edge="1" parent="1" source="act_cetak_struk" target="act_kirim_order">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Ke Barista -->
+        <mxCell id="flow_kirim_terima" edge="1" parent="1" source="act_kirim_order" target="act_terima_pesanan">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="flow_terima_lihat" edge="1" parent="1" source="act_terima_pesanan" target="act_lihat_dashboard">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="flow_lihat_update" edge="1" parent="1" source="act_lihat_dashboard" target="act_update_status">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="flow_update_simpan_status" edge="1" parent="1" source="act_update_status" target="act_simpan_status">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Ke Pemilik (Generate laporan parallel) -->
+        <mxCell id="flow_simpan_generate" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=classic;dashed=1;" edge="1" parent="1" source="act_simpan_transaksi" target="act_generate_laporan">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="400" y="960"/>
+              <mxPoint x="400" y="920"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Dari Barista ke Logout -->
+        <mxCell id="flow_status_logout" edge="1" parent="1" source="act_simpan_status" target="act_logout">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="flow_logout_end" edge="1" parent="1" source="act_logout" target="end">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- SWIMLANE LABELS -->
+        <mxCell id="label_kasir" value="Kasir / Admin / Barista" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="10" width="1100" height="30" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="label_pemilik" value="Pemilik Café" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="830" width="1100" height="30" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

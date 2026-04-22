@@ -154,3 +154,4 @@ function FeatureCard({ feature, index }: { feature: Feature, index: number }) {
     </motion.div>
   )
 }
+

@@ -26,11 +26,13 @@ export default function RootLayout({
 }) {
   const pathname = usePathname()
   
-  // Cek apakah halaman saat ini butuh layout khusus
-  const isNoLayout = noLayoutPaths.includes(pathname || '')
+  // ✅ CEK APAKAH HALAMAN ADMIN (MULAI DARI /admin)
+  const isAdminPage = pathname?.startsWith('/admin')
+  // ✅ ATAU NO LAYOUT PATHS
+  const isNoLayout = noLayoutPaths.includes(pathname || '') || isAdminPage
 
   if (isNoLayout) {
-    // Halaman auth: tanpa Navbar & Footer
+    // Halaman auth & admin: tanpa Navbar & Footer
     return (
       <html lang="id" className={`${inter.variable} ${jetbrainsMono.variable}`}>
         <body className="min-h-screen">

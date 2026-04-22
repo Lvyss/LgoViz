@@ -183,186 +183,204 @@ export default function AdminTopicsPage() {
 
   if (loading) {
     return (
-      <div className="flex justify-center py-12">
-        <div className="w-8 h-8 border-2 rounded-full border-emerald-500 border-t-transparent animate-spin" />
+      <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
+        <div className="w-12 h-12 border-2 rounded-full border-orange-500 border-t-transparent animate-spin shadow-[0_0_15px_rgba(249,115,22,0.4)]" />
+        <p className="text-[10px] font-mono tracking-[0.3em] text-orange-500 animate-pulse uppercase">Fetching_Modules...</p>
       </div>
     )
   }
 
   return (
-    <div>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+    <div className="space-y-10">
+      {/* HEADER SECTION */}
+      <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Kelola Topik</h1>
-          <p className="mt-1 text-sm text-gray-400">Tambah, edit, atau hapus topik pembelajaran</p>
+          <h1 className="text-4xl italic font-black leading-none tracking-tighter text-white uppercase">
+            Kelola<span className="text-orange-500">_Topik</span>
+          </h1>
+          <p className="text-[10px] font-mono text-gray-500 mt-2 tracking-widest uppercase italic">Curriculum_Structure_Management</p>
         </div>
         <button
           onClick={openCreateModal}
-          className="px-4 py-2 text-sm font-medium transition-colors rounded-lg bg-emerald-600 hover:bg-emerald-500"
+          className="relative px-6 py-3 overflow-hidden transition-all bg-orange-600 group rounded-xl hover:bg-orange-500 active:scale-95"
         >
-          + Tambah Topik
+          <div className="absolute inset-0 transition-opacity opacity-0 bg-gradient-to-r from-yellow-400/20 to-transparent group-hover:opacity-100" />
+          <span className="relative z-10 flex items-center gap-2 text-xs font-black tracking-widest text-white uppercase">
+            <span className="text-lg">+</span> Tambah Topik
+          </span>
         </button>
       </div>
 
-      {/* Topics List */}
-      {Object.entries(topicsByModule).map(([moduleTitle, moduleTopics]) => (
-        <div key={moduleTitle} className="mb-8">
-          <h2 className="mb-3 text-lg font-semibold text-gray-300">{moduleTitle}</h2>
-          <div className="space-y-2">
-            {moduleTopics.map((topic) => (
-              <div
-                key={topic.id}
-                className="flex items-center justify-between p-4 transition-colors border rounded-xl bg-white/5 border-white/10 hover:bg-white/10"
-              >
-                <div className="flex-1">
-                  <div className="flex items-center gap-3">
-                    <span className="w-8 text-xs text-gray-500">#{topic.order_index}</span>
-                    <h3 className="font-medium text-white">{topic.title}</h3>
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-gray-400">
-                      {topic.id}
-                    </span>
-                  </div>
-                  <p className="mt-1 ml-8 text-sm text-gray-400 line-clamp-1">
-                    {topic.description || 'Tidak ada deskripsi'}
-                  </p>
-                </div>
-                <div className="flex gap-2">
-                  <Link
-                    href={`/admin/materials?topic=${topic.id}`}
-                    className="p-2 text-gray-400 transition-colors hover:text-emerald-400"
-                    title="Edit Materi"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                    </svg>
-                  </Link>
-                  <button
-                    onClick={() => openEditModal(topic)}
-                    className="p-2 text-gray-400 transition-colors hover:text-blue-400"
-                    title="Edit Topik"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
-                  </button>
-                  <button
-                    onClick={() => handleDelete(topic.id)}
-                    className="p-2 text-gray-400 transition-colors hover:text-red-400"
-                    title="Hapus Topik"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      ))}
+      {/* TOPICS LIST BY MODULE */}
+      <div className="space-y-12">
+        {Object.entries(topicsByModule).map(([moduleTitle, moduleTopics]) => (
+          <div key={moduleTitle} className="relative">
+            {/* Module Title with Molten Line */}
+            <div className="flex items-center gap-4 mb-6">
+              <h2 className="text-sm font-black uppercase tracking-[0.3em] text-orange-500/80">{moduleTitle}</h2>
+              <div className="h-[1px] flex-1 bg-gradient-to-r from-orange-500/20 to-transparent" />
+            </div>
 
-      {/* Modal Form */}
+            <div className="grid gap-3">
+              {moduleTopics.map((topic) => (
+                <div
+                  key={topic.id}
+                  className="group relative flex items-center justify-between p-5 transition-all duration-300 border border-white/5 rounded-2xl bg-[#080808] hover:border-orange-500/30 hover:bg-[#0c0c0c]"
+                >
+                   {/* Left Ember Indicator (Hover) */}
+                   <div className="absolute left-0 w-1 h-0 bg-orange-500 rounded-r-full group-hover:h-8 transition-all duration-300 shadow-[2px_0_10px_rgba(249,115,22,0.5)]" />
+
+                  <div className="flex-1 pl-4">
+                    <div className="flex items-center gap-4">
+                      <span className="font-mono text-[10px] text-gray-600 font-bold tracking-tighter">[{topic.order_index.toString().padStart(2, '0')}]</span>
+                      <h3 className="text-sm font-bold tracking-wide text-white uppercase transition-colors group-hover:text-orange-400">{topic.title}</h3>
+                      <span className="text-[9px] font-mono px-2 py-0.5 rounded border border-white/5 bg-white/[0.02] text-gray-500 group-hover:border-orange-500/20 group-hover:text-orange-500/50 transition-all">
+                        {topic.id}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-[11px] text-gray-500 line-clamp-1 font-medium italic opacity-70 group-hover:opacity-100 transition-opacity">
+                      {topic.description || 'System.null_description'}
+                    </p>
+                  </div>
+
+                  {/* ACTION BUTTONS */}
+                  <div className="flex items-center gap-1">
+                    <Link
+                      href={`/admin/materials?topic=${topic.id}`}
+                      className="p-2.5 text-gray-500 hover:text-emerald-400 transition-all hover:bg-emerald-500/10 rounded-xl"
+                      title="Edit Materi"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                      </svg>
+                    </Link>
+                    <button
+                      onClick={() => openEditModal(topic)}
+                      className="p-2.5 text-gray-500 hover:text-yellow-500 transition-all hover:bg-yellow-500/10 rounded-xl"
+                      title="Edit Topik"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => handleDelete(topic.id)}
+                      className="p-2.5 text-gray-500 hover:text-red-500 transition-all hover:bg-red-500/10 rounded-xl"
+                      title="Hapus Topik"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* MODAL FORM: REDESIGNED */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-          <div className="bg-[#121218] border border-white/10 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-white/10">
-              <h2 className="text-xl font-semibold">
-                {editingTopic ? 'Edit Topik' : 'Tambah Topik Baru'}
-              </h2>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/90 backdrop-blur-sm" onClick={() => setIsModalOpen(false)} />
+          <div className="relative bg-[#0a0a0a] border border-white/10 rounded-[2.5rem] w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+            {/* Header Modal */}
+            <div className="flex items-center justify-between p-8 border-b border-white/5 bg-gradient-to-r from-orange-600/10 to-transparent">
+              <div>
+                <h2 className="text-xl italic font-black tracking-tighter uppercase">
+                  {editingTopic ? 'Edit' : 'New'}<span className="text-orange-500">_Topic</span>
+                </h2>
+                <p className="text-[9px] font-mono text-gray-500 uppercase tracking-widest">Configuration_Panel</p>
+              </div>
+              <button onClick={() => setIsModalOpen(false)} className="text-gray-500 hover:text-white transition-colors uppercase text-[10px] font-black tracking-widest">[ Close ]</button>
             </div>
             
-            <div className="p-6 space-y-4">
-              {/* ID Topik (hanya untuk create) */}
-              {!editingTopic && (
+            {/* Content Modal */}
+            <div className="p-8 space-y-6 overflow-y-auto custom-scrollbar">
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                {!editingTopic && (
+                  <div className="md:col-span-2">
+                    <label className="block mb-2 text-[10px] font-black text-gray-500 uppercase tracking-widest">ID_Slug</label>
+                    <input
+                      type="text"
+                      value={formData.id}
+                      onChange={(e) => setFormData({ ...formData, id: e.target.value })}
+                      placeholder="contoh: array-1d"
+                      className="w-full px-5 py-3 text-xs text-white border rounded-2xl bg-white/[0.02] border-white/10 focus:outline-none focus:border-orange-500 focus:bg-white/[0.05] transition-all font-mono"
+                    />
+                  </div>
+                )}
+                
                 <div>
-                  <label className="block mb-2 text-sm font-medium">ID Topik (slug)</label>
+                  <label className="block mb-2 text-[10px] font-black text-gray-500 uppercase tracking-widest">Topic_Title *</label>
                   <input
                     type="text"
-                    value={formData.id}
-                    onChange={(e) => setFormData({ ...formData, id: e.target.value })}
-                    placeholder="contoh: if-tunggal"
-                    className="w-full px-4 py-2 text-white border rounded-lg bg-black/50 border-white/10 focus:outline-none focus:border-emerald-500"
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    className="w-full px-5 py-3 text-xs font-bold text-white border rounded-2xl bg-white/[0.02] border-white/10 focus:outline-none focus:border-orange-500 transition-all uppercase tracking-wide"
                   />
-                  <p className="mt-1 text-xs text-gray-500">Digunakan untuk URL, gunakan huruf kecil dan tanda hubung</p>
                 </div>
-              )}
-              
-              {/* Judul Topik */}
-              <div>
-                <label className="block mb-2 text-sm font-medium">Judul Topik *</label>
-                <input
-                  type="text"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  placeholder="Contoh: If Tunggal"
-                  className="w-full px-4 py-2 text-white border rounded-lg bg-black/50 border-white/10 focus:outline-none focus:border-emerald-500"
-                />
+
+                <div>
+                  <label className="block mb-2 text-[10px] font-black text-gray-500 uppercase tracking-widest">Module_Select *</label>
+                  <select
+                    value={formData.module_id}
+                    onChange={(e) => setFormData({ ...formData, module_id: e.target.value })}
+                    className="w-full px-5 py-3 text-xs font-bold text-white border rounded-2xl bg-white/[0.02] border-white/10 focus:outline-none focus:border-orange-500 transition-all appearance-none"
+                  >
+                    {modules.map((module) => (
+                      <option key={module.id} value={module.id} className="bg-[#0a0a0a]">{module.title.toUpperCase()}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
               
-              {/* Modul */}
               <div>
-                <label className="block mb-2 text-sm font-medium">Modul *</label>
-                <select
-                  value={formData.module_id}
-                  onChange={(e) => setFormData({ ...formData, module_id: e.target.value })}
-                  className="w-full px-4 py-2 text-white border rounded-lg bg-black/50 border-white/10 focus:outline-none focus:border-emerald-500"
-                >
-                  {modules.map((module) => (
-                    <option key={module.id} value={module.id}>{module.title}</option>
-                  ))}
-                </select>
-              </div>
-              
-              {/* Urutan */}
-              <div>
-                <label className="block mb-2 text-sm font-medium">Urutan</label>
+                <label className="block mb-2 text-[10px] font-black text-gray-500 uppercase tracking-widest">Order_Index</label>
                 <input
                   type="number"
                   value={formData.order_index}
                   onChange={(e) => setFormData({ ...formData, order_index: parseInt(e.target.value) })}
-                  className="w-32 px-4 py-2 text-white border rounded-lg bg-black/50 border-white/10 focus:outline-none focus:border-emerald-500"
+                  className="w-24 px-5 py-3 text-xs font-mono text-white border rounded-2xl bg-white/[0.02] border-white/10 focus:outline-none focus:border-orange-500 transition-all"
                 />
               </div>
               
-              {/* Deskripsi */}
               <div>
-                <label className="block mb-2 text-sm font-medium">Deskripsi Singkat</label>
+                <label className="block mb-2 text-[10px] font-black text-gray-500 uppercase tracking-widest">Summary_Description</label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   rows={2}
-                  className="w-full px-4 py-2 text-white border rounded-lg bg-black/50 border-white/10 focus:outline-none focus:border-emerald-500"
-                  placeholder="Deskripsi singkat tentang topik ini..."
+                  className="w-full px-5 py-3 text-xs text-gray-400 border rounded-2xl bg-white/[0.02] border-white/10 focus:outline-none focus:border-orange-500 transition-all italic"
+                  placeholder="Explain what students will learn..."
                 />
               </div>
               
-              {/* Starter Code */}
               <div>
-                <label className="block mb-2 text-sm font-medium">Starter Code (C++)</label>
+                <label className="block mb-2 text-[10px] font-black text-gray-500 uppercase tracking-widest text-orange-500/80">Starter_Code_C++</label>
                 <textarea
                   value={formData.starter_code}
                   onChange={(e) => setFormData({ ...formData, starter_code: e.target.value })}
-                  rows={8}
-                  className="w-full px-4 py-2 font-mono text-sm text-white border rounded-lg bg-black/50 border-white/10 focus:outline-none focus:border-emerald-500"
-                  placeholder="#include <iostream>&#10;using namespace std;&#10;&#10;int main() {&#10;    // kode di sini&#10;    return 0;&#10;}"
+                  rows={6}
+                  className="w-full px-5 py-4 font-mono text-[11px] text-orange-200/70 border rounded-2xl bg-black/60 border-white/5 focus:outline-none focus:border-orange-500 transition-all shadow-inner"
                 />
-                <p className="mt-1 text-xs text-gray-500">Kode awal yang akan muncul di editor</p>
               </div>
             </div>
             
-            <div className="flex gap-3 p-6 border-t border-white/10">
+            {/* Footer Modal Actions */}
+            <div className="p-8 border-t border-white/5 bg-white/[0.01] flex gap-4">
               <button
                 onClick={handleSave}
-                className="px-4 py-2 text-sm font-medium transition-colors rounded-lg bg-emerald-600 hover:bg-emerald-500"
+                className="flex-1 py-4 text-[10px] font-black uppercase tracking-[0.2em] transition-all rounded-2xl bg-orange-600 hover:bg-orange-500 active:scale-95 shadow-[0_0_20px_rgba(234,88,12,0.2)]"
               >
-                Simpan
+                Sync_&_Save_Changes
               </button>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="px-4 py-2 text-sm font-medium transition-colors rounded-lg bg-white/10 hover:bg-white/20"
+                className="px-8 py-4 text-[10px] font-black uppercase tracking-[0.2em] transition-all rounded-2xl bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white"
               >
-                Batal
+                Abort
               </button>
             </div>
           </div>
