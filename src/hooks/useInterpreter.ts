@@ -37,6 +37,30 @@ export interface UseInterpreterReturn {
   getCurrentVariables: () => Record<string, any>
   getCurrentOutput: () => string
   getCurrentExplanation: () => string
+  
+  // 🔥 TAMBAHAN UNTUK CHALLENGE VALIDATION
+  validateChallenge: (code: string, challenge: ChallengeConfig) => Promise<ChallengeResult>
+}
+
+// 🔥 Tipe data untuk Challenge
+export interface ChallengeConfig {
+  id: string
+  description: string
+  starter_code?: string
+  solution_code?: string
+  required_keywords?: string[]
+  required_variables?: string[]
+  expected_output?: string
+  points?: number
+}
+
+export interface ChallengeResult {
+  passed: boolean
+  errors: string[]
+  details?: {
+    output?: string
+    variables?: Record<string, any>
+  }
 }
 
 export function useInterpreter(): UseInterpreterReturn {
@@ -83,6 +107,128 @@ export function useInterpreter(): UseInterpreterReturn {
     return () => clearPlayInterval()
   }, [isPlaying, trace, currentStep, speed, clearPlayInterval])
 
+  // 🔥 Fungsi validasi challenge
+  const validateChallenge = useCallback(async (code: string, challenge: ChallengeConfig): Promise<ChallengeResult> => {
+    const result: ChallengeResult = {
+      passed: true,
+      errors: [],
+      details: {}
+    }
+
+    // 1. Cek kata kunci wajib
+    if (challenge.required_keywords && challenge.required_keywords.length > 0) {
+      for (const keyword of challenge.required_keywords) {
+        // Cek keyword sebagai whole word (bukan substring)
+        const wordRegex = new RegExp(`\\b${keyword}\\b`, 'i')
+        if (!wordRegex.test(code)) {
+          result.passed = false
+          result.errors.push(`Kata kunci '${keyword}' tidak ditemukan dalam kode`)
+        }
+      }
+    }
+
+    // 2. Cek variabel wajib
+    if (challenge.required_variables && challenge.required_variables.length > 0) {
+      for (const variable of challenge.required_variables) {
+        // Cek deklarasi variabel: tipe data + nama variabel
+        const varPattern = new RegExp(`(int|float|double|char|bool|string|long|short)\\s+${variable}\\s*[=;]`, 'i')
+        if (!varPattern.test(code)) {
+          result.passed = false
+          result.errors.push(`Variabel '${variable}' tidak dideklarasikan dengan benar`)
+        }
+      }
+    }
+
+    // 3. Eksekusi kode dan validasi output
+    if (challenge.expected_output) {
+      try {
+        let capturedOutput = ''
+        
+        // Handler untuk capture output
+        const captureOutput = (text: string) => {
+          capturedOutput += text
+        }
+        
+        // Eksekusi kode dengan evaluator
+        const executionResult = await evaluatePercabangan(code, {
+          onStep: (step) => {
+            // Collect output dari setiap step
+            if (step.output && step.output.length > 0) {
+              capturedOutput += step.output.join('')
+            }
+          },
+          onInput: async (varName: string, varType: string): Promise<string> => {
+            // Untuk challenge, gunakan nilai default
+            if (varType === 'int') return '0'
+            if (varType === 'bool') return 'false'
+            if (varType === 'char') return 'a'
+            return ''
+          }
+        })
+        
+        result.details!.output = capturedOutput.trim()
+        
+        // Cek apakah output mengandung expected_output
+        const expectedNormalized = challenge.expected_output.toLowerCase().replace(/\s+/g, ' ')
+        const outputNormalized = capturedOutput.toLowerCase().replace(/\s+/g, ' ')
+        
+        if (!outputNormalized.includes(expectedNormalized)) {
+          result.passed = false
+          result.errors.push(`Output tidak sesuai. Diharapkan: "${challenge.expected_output}", Output: "${capturedOutput.trim() || '(kosong)'}"`)
+        }
+        
+        // Capture variables dari step terakhir
+        if (executionResult.steps.length > 0) {
+          const lastStep = executionResult.steps[executionResult.steps.length - 1]
+          const varsObj: Record<string, any> = {}
+          lastStep.variables.forEach(v => {
+            varsObj[v.name] = v.value
+          })
+          result.details!.variables = varsObj
+        }
+        
+        if (executionResult.hasError) {
+          result.passed = false
+          result.errors.push(`Error eksekusi: ${executionResult.errorMessage || 'Unknown error'}`)
+        }
+      } catch (err: any) {
+        result.passed = false
+        result.errors.push(`Error: ${err.message}`)
+      }
+    }
+
+    return result
+  }, [])
+
+  // Input handler dengan proper cleanup
+  const createInputHandler = useCallback(() => {
+    return (varName: string, varType: string): Promise<string> => {
+      return new Promise<string>((resolve) => {
+        // Cleanup previous resolver if exists
+        if (inputResolverRef.current) {
+          inputResolverRef.current('0')
+        }
+        inputResolverRef.current = resolve
+        setInputVariable(varName)
+        setInputType(varType)
+        setWaitingForInput(true)
+      })
+    }
+  }, [])
+
+  // Step handler
+  const createStepHandler = useCallback(() => {
+    return (step: ExecutionStep) => {
+      stepsRef.current.push(step)
+      setTrace({
+        steps: [...stepsRef.current],
+        totalSteps: stepsRef.current.length,
+        hasError: false,
+      })
+      setCurrentStep(stepsRef.current.length)
+    }
+  }, [])
+
   const runCode = useCallback(async (code: string, evaluatorType: string = 'percabangan') => {
     // Prevent concurrent runs
     if (isRunningCodeRef.current) {
@@ -101,34 +247,16 @@ export function useInterpreter(): UseInterpreterReturn {
     stepsRef.current = []
     isCancelledRef.current = false
 
-    // Input handler
-const handleInput = (varName: string, varType: string): Promise<string> => {
-  return new Promise<string>((resolve) => {
-    inputResolverRef.current = resolve
-    setInputVariable(varName)
-    setInputType(varType)
-    setWaitingForInput(true)
-  })
-}
-
-    // Step callback
-    const handleStep = (step: ExecutionStep) => {
-      stepsRef.current.push(step)
-      setTrace({
-        steps: [...stepsRef.current],
-        totalSteps: stepsRef.current.length,
-        hasError: false,
-      })
-      setCurrentStep(stepsRef.current.length)
-    }
-
     try {
       let result: ExecutionTrace
       
       // Pilih evaluator berdasarkan tipe
       switch (evaluatorType) {
         case 'percabangan':
-          result = await evaluatePercabangan(code, { onInput: handleInput, onStep: handleStep })
+          result = await evaluatePercabangan(code, { 
+            onInput: createInputHandler(), 
+            onStep: createStepHandler() 
+          })
           break
         case 'perulangan':
           result = {
@@ -147,7 +275,10 @@ const handleInput = (varName: string, varType: string): Promise<string> => {
           }
           break
         default:
-          result = await evaluatePercabangan(code, { onInput: handleInput, onStep: handleStep })
+          result = await evaluatePercabangan(code, { 
+            onInput: createInputHandler(), 
+            onStep: createStepHandler() 
+          })
       }
 
       if (isCancelledRef.current) return
@@ -157,9 +288,9 @@ const handleInput = (varName: string, varType: string): Promise<string> => {
         setError(result.errorMessage || 'Execution error')
       }
       
-      if (result.steps.length > 0) {
-        setCurrentStep(result.steps.length)
-      }
+if (result.steps.length > 0) {
+  setCurrentStep(1)  // ← set ke step pertama (1, bukan 0)
+}
     } catch (err) {
       if (isCancelledRef.current) return
       setError(err instanceof Error ? err.message : 'Unknown error')
@@ -168,9 +299,9 @@ const handleInput = (varName: string, varType: string): Promise<string> => {
     } finally {
       isRunningCodeRef.current = false
       setIsRunning(false)
-      setWaitingForInput(false)
+      // Don't reset waitingForInput here, let it be cleared by submit/cancel
     }
-  }, [clearPlayInterval])
+  }, [clearPlayInterval, createInputHandler, createStepHandler])
 
   const reset = useCallback(() => {
     clearPlayInterval()
@@ -298,5 +429,8 @@ const handleInput = (varName: string, varType: string): Promise<string> => {
     getCurrentVariables,
     getCurrentOutput,
     getCurrentExplanation,
+    
+    // 🔥 EXPORT VALIDATE CHALLENGE
+    validateChallenge,
   }
 }

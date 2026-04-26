@@ -13,9 +13,27 @@ type Module = {
 }
 
 const modules: Module[] = [
-  { id: 'percabangan', title: 'Percabangan', description: 'Pelajari logika if-else, switch-case, dan pengambilan keputusan.', icon: '🔀', topicCount: 5 },
-  { id: 'perulangan', title: 'Perulangan', description: 'Kuasai for loop, while loop, dan teknik iterasi untuk efisiensi kode.', icon: '🔄', topicCount: 5 },
-  { id: 'struktur-data', title: 'Struktur Data', description: 'Pahami array, stack, queue, dan algoritma sorting.', icon: '📊', topicCount: 8 },
+  { 
+    id: 'percabangan', 
+    title: 'Percabangan', 
+    description: 'Belajar mengambil keputusan dalam program. Kuasai if, if-else, else-if, nested if, dan switch-case.', 
+    icon: '🔀', 
+    topicCount: 5 
+  },
+  { 
+    id: 'perulangan', 
+    title: 'Perulangan', 
+    description: 'Pelajari cara mengulang指令 dengan efisien. Pahami for loop, while loop, do-while, dan nested loop.', 
+    icon: '🔄', 
+    topicCount: 5 
+  },
+  { 
+    id: 'struktur-data', 
+    title: 'Struktur Data & Algoritma', 
+    description: 'Mengelola data dengan array, stack, queue, dan pelajari algoritma pencarian serta pengurutan.', 
+    icon: '📊', 
+    topicCount: 8 
+  },
 ]
 
 const firstTopicByModule: Record<string, string> = {
@@ -101,7 +119,7 @@ export default function ModuleGrid() {
 
       <div className="relative z-20 max-w-6xl px-6 mx-auto">
         
-        {/* HEADER - dengan whileInView repeatable */}
+        {/* HEADER */}
         <div className="relative mb-24">
           <div className="relative z-10 flex flex-col justify-between gap-6 md:flex-row md:items-end">
             <div className="max-w-xl">
@@ -112,7 +130,7 @@ export default function ModuleGrid() {
                 viewport={{ once: false, amount: 0.3 }}
                 className="inline-block px-3 py-1 mb-4 border rounded-full border-orange-500/20 bg-orange-500/5"
               >
-                <span className="text-[9px] tracking-[0.3em] uppercase text-orange-500 font-bold">Modul</span>
+                <span className="text-[9px] tracking-[0.3em] uppercase text-orange-500 font-bold">Modul Belajar</span>
               </motion.div>
               
               <motion.h2 
@@ -122,7 +140,7 @@ export default function ModuleGrid() {
                 viewport={{ once: false, amount: 0.3 }}
                 className="text-4xl font-semibold tracking-tighter text-white md:text-6xl"
               >
-                Kurikulum <span className="text-orange-500">Visual</span>
+                Pilih Jalur <span className="text-orange-500">Belajarmu</span>
               </motion.h2>
             </div>
             
@@ -133,7 +151,7 @@ export default function ModuleGrid() {
               viewport={{ once: false, amount: 0.3 }}
               className="max-w-xs pl-6 text-sm font-light leading-relaxed text-gray-500 border-l border-white/10"
             >
-              Pilih modul yang ingin kamu bedah. Setiap materi dilengkapi dengan debugger interaktif.
+              Setiap modul berisi materi lengkap dengan visualisasi interaktif dan quiz untuk menguji pemahamanmu.
             </motion.p>
           </div>
 
@@ -182,7 +200,7 @@ function ModuleCard({ module, index }: { module: Module, index: number }) {
       initial="hidden"
       whileInView="visible"
       viewport={{ once: false, amount: 0.2 }}
-      transition={{ delay: index * 0.15 }}  // delay lebih panjang per card
+      transition={{ delay: index * 0.15 }}
       className="[perspective:1000px]"
     >
       <Link href={`/learn/${module.id}/${firstTopic}`} className="relative block h-full group">
@@ -200,7 +218,9 @@ function ModuleCard({ module, index }: { module: Module, index: number }) {
           <div className="relative z-10">
             <div className="flex items-center gap-2 mb-3">
               <span className="w-6 h-[1px] bg-orange-500/30 group-hover:w-10 transition-all" />
-              <span className="text-[9px] font-mono text-orange-500/60 uppercase tracking-wider">{module.topicCount} Topics</span>
+              <span className="text-[9px] font-mono text-orange-500/60 uppercase tracking-wider">
+                {module.topicCount} {module.topicCount === 1 ? 'Topik' : 'Topik'}
+              </span>
             </div>
             
             <h3 className="mb-2 text-xl font-semibold tracking-tight text-white transition-colors group-hover:text-orange-500">
@@ -222,4 +242,3 @@ function ModuleCard({ module, index }: { module: Module, index: number }) {
     </motion.div>
   )
 }
-

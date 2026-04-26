@@ -13,32 +13,32 @@ type Feature = {
 const features: Feature[] = [
   { 
     icon: '🎮', 
-    title: 'Visual Interaktif', 
-    description: 'Highlight baris kode C++ secara real-time saat dieksekusi.',
+    title: 'Visualisasi Kode Langsung', 
+    description: 'Lihat eksekusi kode C++ baris per baris. Setiap langkah di-highlight agar mudah dipahami alurnya.',
     className: 'md:col-span-2' 
   },
   { 
     icon: '⚡', 
-    title: 'Variable Tracker', 
-    description: 'Monitor perubahan nilai variabel di memori secara instan.',
+    title: 'Pantau Nilai Variabel', 
+    description: 'Setiap perubahan nilai variabel langsung terlihat di panel Memory Inspector. Paham bagaimana data berubah.',
     className: 'md:col-span-1' 
   },
   { 
     icon: '📚', 
-    title: '15+ Topik', 
-    description: 'Kurikulum lengkap dari fundamental hingga struktur data.',
+    title: 'Materi Terstruktur', 
+    description: '15+ topik dari percabangan hingga algoritma sorting. Belajar dengan urutan yang sudah dirancang.',
     className: 'md:col-span-1' 
   },
   { 
     icon: '⌨️', 
-    title: 'Code Editor', 
-    description: 'Tulis dan modifikasi kode langsung di dalam browser.',
+    title: 'Editor Kode Interaktif', 
+    description: 'Tulis, edit, dan jalankan kode C++ langsung di browser. Lengkap dengan syntax highlighting.',
     className: 'md:col-span-1' 
   },
   { 
     icon: '🎬', 
-    title: 'Logic Control', 
-    description: 'Atur kecepatan eksekusi, play, atau pause sesukamu.',
+    title: 'Kendali Penuh Eksekusi', 
+    description: 'Play, pause, step-by-step, dan atur kecepatan. Pelajari logika program dengan ritme belajarmu.',
     className: 'md:col-span-1' 
   },
 ]
@@ -59,12 +59,11 @@ export default function FeatureSection() {
           <motion.div 
             initial={{ opacity: 0, x: -20 }}
             whileInView={{ opacity: 1, x: 0 }}
-            // viewport={{ once: true }}  ← HAPUS atau ganti jadi false
             viewport={{ once: false }}
             transition={{ duration: 0.8 }}
             className="flex items-center gap-3 mb-6"
           >
-            <span className="text-[10px] tracking-[0.5em] uppercase text-orange-500 font-semibold">Fitur</span>
+            <span className="text-[10px] tracking-[0.5em] uppercase text-orange-500 font-semibold">Fitur Unggulan</span>
           </motion.div>
           
           <motion.h2 
@@ -74,8 +73,8 @@ export default function FeatureSection() {
             transition={{ duration: 0.8, delay: 0.2 }}
             className="mb-6 text-4xl font-light leading-tight tracking-tight text-white md:text-5xl"
           >
-            Instrumen presisi untuk <br />
-            <span className="italic text-white/40">membedah logika program.</span>
+            Pelajari Algoritma <br />
+            <span className="italic text-white/40">dengan Cara yang Visual.</span>
           </motion.h2>
           
           <motion.p 
@@ -85,7 +84,10 @@ export default function FeatureSection() {
             transition={{ delay: 0.4, duration: 0.6 }}
             className="max-w-lg text-xs leading-relaxed text-gray-400 font-poppins"
           >
-            LgoViz mengubah baris kode yang abstrak menjadi visualisasi interaktif, memudahkan Anda memahami alur algoritma secara mendalam.
+            LgoViz mengubah kode yang abstrak menjadi visualisasi interaktif. 
+            Setiap baris kode, setiap perubahan variabel, dan setiap alur logika 
+            bisa kamu lihat secara langsung. Cocok untuk siswa SMK RPL yang ingin 
+            memahami pemrograman C++ secara mendalam.
           </motion.p>
         </div>
 
@@ -117,7 +119,7 @@ function FeatureCard({ feature, index }: { feature: Feature, index: number }) {
       onMouseMove={handleMouseMove}
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: false }}  // ← HAPUS atau ganti false
+      viewport={{ once: false }}
       transition={{ delay: index * 0.05, duration: 0.6 }}
       className={`
         group relative overflow-hidden rounded-2xl 
@@ -154,4 +156,3 @@ function FeatureCard({ feature, index }: { feature: Feature, index: number }) {
     </motion.div>
   )
 }
-

@@ -20,9 +20,21 @@ const colorStyles: Record<ModuleColor, { text: string; glow: string; border: str
   purple:  { text: 'text-purple-400',  glow: 'bg-purple-500 shadow-[0_0_30px_rgba(168,85,247,0.3)]',  border: 'border-purple-500/40',  bg: 'bg-purple-500/10'  },
 }
 
+// Helper: cari topik pertama yang belum selesai
+const getFirstUnlockedTopic = async (moduleId: string, userId: string) => {
+  const topics = await getTopicsByModule(moduleId)
+  const userProgress = await getUserProgress(userId)
+  const progressMap = new Map(userProgress.map(p => [p.topic_id, p]))
+  
+  const firstUnlocked = topics.find(topic => {
+    const progress = progressMap.get(topic.id)
+    return progress?.status !== 'completed'
+  })
+  
+  return firstUnlocked?.id || topics[0]?.id || 'if'
+}
+
 // --- TUTORIAL STEPS CONFIG ---
-// anchor: id elemen (string) atau array id (gabung jadi 1 highlight box)
-// popupSide: di sisi mana popup muncul relatif ke elemen ('right' | 'left' | 'bottom' | 'top')
 const TUTORIAL_STEPS: Array<{
   anchor: string | string[]
   title: string
@@ -31,20 +43,20 @@ const TUTORIAL_STEPS: Array<{
 }> = [
   {
     anchor: 'tutorial-progress',
-    title: 'Pusat Progres',
-    desc: '📊 Pusat kendali progres belajarmu. Setiap topik yang selesai akan meningkatkan persentase di sini.',
+    title: 'Ringkasan Progress',
+    desc: '📊 Lihat capaian belajarmu di sini. Setiap topik yang kamu selesaikan akan meningkatkan persentase progress.',
     popupSide: 'right' as const,
   },
   {
-    anchor: ['tutorial-orbital-zone', 'tutorial-nav'],  // gabung 2 elemen jadi 1 highlight
-    title: 'Orbital Selector',
-    desc: '🔄 Navigasi orbital untuk memilih modul. Gunakan tombol PREV / NEXT untuk berganti modul.',
-    popupSide: 'top' as const,
+    anchor: ['tutorial-orbital-zone', 'tutorial-nav'],
+    title: 'Pemilih Modul',
+    desc: '🔄 Gunakan tombol PREV / NEXT untuk memilih modul pembelajaran. Setiap modul memiliki topik-topik berbeda.',
+    popupSide: 'bottom' as const,
   },
   {
     anchor: 'tutorial-description',
-    title: 'Detail Modul',
-    desc: '🔗 Setelah memilih modul, tekan tombol Connect Neural Link di sini untuk mulai pembelajaran.',
+    title: 'Info & Mulai Belajar',
+    desc: '🔗 Setelah memilih modul, klik tombol "Mulai Belajar" untuk masuk ke materi dan mulai perjalanan belajarmu.',
     popupSide: 'left' as const,
   },
 ]
@@ -55,7 +67,6 @@ function getRect(id: string): DOMRect | null {
   return el ? el.getBoundingClientRect() : null
 }
 
-// Merge beberapa rect jadi satu bounding box yang mencakup semuanya
 function getMergedRect(ids: string[]): DOMRect | null {
   const rects = ids.map(getRect).filter(Boolean) as DOMRect[]
   if (rects.length === 0) return null
@@ -80,8 +91,8 @@ function TutorialOverlay({
   onPrev: () => void
   onFinish: (skipForever: boolean) => void
 }) {
-  const PAD = 12          // padding di sekitar elemen highlight
-  const RADIUS = 16       // border-radius lubang
+  const PAD = 12
+  const RADIUS = 16
 
   const [rect, setRect] = useState<DOMRect | null>(null)
   const [winSize, setWinSize] = useState({ w: 0, h: 0 })
@@ -89,7 +100,6 @@ function TutorialOverlay({
 
   const config = TUTORIAL_STEPS[step]
 
-  // Update rect tiap frame supaya smooth saat resize / animasi
   const measureLoop = useCallback(() => {
     const r = Array.isArray(config.anchor)
       ? getMergedRect(config.anchor)
@@ -106,15 +116,13 @@ function TutorialOverlay({
 
   if (!rect || winSize.w === 0) return null
 
-  // Koordinat lubang (dengan padding)
   const hx = rect.left - PAD
   const hy = rect.top  - PAD
   const hw = rect.width  + PAD * 2
   const hh = rect.height + PAD * 2
 
-  // Posisi popup
   const POPUP_W = 340
-  const POPUP_H = 260 // estimasi, konten bisa lebih
+  const POPUP_H = 260
   const GAP = 20
 
   let popupStyle: React.CSSProperties = {}
@@ -144,17 +152,14 @@ function TutorialOverlay({
     }
   }
 
-  // Clamp horizontal
   if (typeof popupStyle.left === 'number') {
     popupStyle.left = Math.max(16, Math.min(popupStyle.left, winSize.w - POPUP_W - 16))
   }
 
-  // SVG path: full screen rect berlubang di tengah (even-odd rule)
   const W = winSize.w
   const H = winSize.h
   const r = RADIUS
 
-  // Rounded rect path untuk lubang
   const hole = `
     M ${hx + r} ${hy}
     L ${hx + hw - r} ${hy}
@@ -168,7 +173,6 @@ function TutorialOverlay({
     Z
   `
 
-  // Arrow arah popup
   const arrowStyle: React.CSSProperties = { position: 'absolute' }
   if (side === 'right') {
     Object.assign(arrowStyle, { left: -8, top: '50%', transform: 'translateY(-50%) rotate(45deg)', borderLeft: 'none', borderBottom: 'none' })
@@ -182,19 +186,17 @@ function TutorialOverlay({
 
   return (
     <>
-      {/* ── Layer 1: SVG Overlay berlubang (TIDAK menghalangi elemen highlight) ── */}
       <svg
         style={{
           position: 'fixed', inset: 0,
           width: '100%', height: '100%',
           zIndex: 9000,
-          pointerEvents: 'none',   // klik tembus ke highlight element
+          pointerEvents: 'none',
         }}
         xmlns="http://www.w3.org/2000/svg"
       >
         <defs>
           <mask id="tutorial-mask">
-            {/* Putih = kelihatan (overlay gelap), Hitam = transparan (lubang) */}
             <rect width={W} height={H} fill="white" />
             <path d={hole} fill="black" />
           </mask>
@@ -204,7 +206,6 @@ function TutorialOverlay({
           fill="rgba(0,0,0,0.72)"
           mask="url(#tutorial-mask)"
         />
-        {/* Border highlight di sekeliling lubang */}
         <path
           d={hole}
           fill="none"
@@ -214,7 +215,6 @@ function TutorialOverlay({
         />
       </svg>
 
-      {/* ── Layer 2: Popup (di atas overlay, bisa diklik) ── */}
       <motion.div
         key={step}
         initial={{ opacity: 0, scale: 0.92 }}
@@ -225,10 +225,9 @@ function TutorialOverlay({
           position: 'fixed',
           ...popupStyle,
           width: POPUP_W,
-          zIndex: 9100,         // DI ATAS overlay
+          zIndex: 9100,
         }}
       >
-        {/* Arrow */}
         <div
           style={{
             ...arrowStyle,
@@ -239,7 +238,6 @@ function TutorialOverlay({
           }}
         />
 
-        {/* Card */}
         <div style={{
           background: '#0a0a0a',
           border: '1px solid rgba(234,88,12,0.35)',
@@ -249,7 +247,6 @@ function TutorialOverlay({
           position: 'relative',
           overflow: 'hidden',
         }}>
-          {/* Ambient glow */}
           <div style={{
             position: 'absolute', top: -32, left: -32,
             width: 100, height: 100,
@@ -257,7 +254,6 @@ function TutorialOverlay({
             pointerEvents: 'none',
           }} />
 
-          {/* Step dots */}
           <div style={{ display: 'flex', gap: 6, justifyContent: 'center', marginBottom: 16 }}>
             {Array.from({ length: totalSteps }).map((_, i) => (
               <div key={i} style={{
@@ -274,7 +270,7 @@ function TutorialOverlay({
               fontSize: 9, fontWeight: 900, letterSpacing: '0.4em',
               color: '#ea580c', textTransform: 'uppercase', marginBottom: 8,
             }}>
-              System_Guide — {step + 1}/{totalSteps}
+              Panduan — {step + 1}/{totalSteps}
             </p>
             <h4 style={{
               fontSize: 18, fontWeight: 900, fontStyle: 'italic',
@@ -291,7 +287,6 @@ function TutorialOverlay({
               {config.desc}
             </p>
 
-            {/* Buttons */}
             <div style={{ display: 'flex', gap: 8 }}>
               {step > 0 && (
                 <button
@@ -326,7 +321,6 @@ function TutorialOverlay({
               </button>
             </div>
 
-            {/* Options bawah */}
             <div style={{
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
               marginTop: 14, paddingTop: 12,
@@ -373,8 +367,6 @@ export default function NeuralDashboardFixed() {
   const [showTutorial, setShowTutorial]   = useState(false)
   const [tutorialStep, setTutorialStep]   = useState(0)
 
-  // --- CEK TUTORIAL: muncul setiap kali halaman di-mount/di-focus
-  // sampai user centang "jangan tampilkan lagi"
   useEffect(() => {
     const checkTutorial = () => {
       const skipped = localStorage.getItem('skip_neural_tutorial')
@@ -388,7 +380,6 @@ export default function NeuralDashboardFixed() {
     return () => window.removeEventListener('focus', checkTutorial)
   }, [])
 
-  // --- DATA LOADING ---
   useEffect(() => {
     const loadDashboard = async () => {
       setLoading(true)
@@ -421,13 +412,10 @@ export default function NeuralDashboardFixed() {
     loadDashboard()
   }, [router, supabase.auth])
 
-  // --- HANDLERS ---
   const handlePrev = () => setActiveIndex(p => (p > 0 ? p - 1 : modules.length - 1))
   const handleNext = () => setActiveIndex(p => (p < modules.length - 1 ? p + 1 : 0))
 
   const finishTutorial = (dontShowAgain: boolean) => {
-    // Hanya simpan ke localStorage kalau user CENTANG "jangan tampilkan lagi"
-    // Kalau cuma Lewati / selesai tanpa centang → muncul lagi saat balik ke halaman ini
     if (dontShowAgain) localStorage.setItem('skip_neural_tutorial', 'true')
     setShowTutorial(false)
     setTutorialStep(0)
@@ -437,14 +425,14 @@ export default function NeuralDashboardFixed() {
 
   if (loading) return (
     <div className="flex items-center justify-center h-screen font-mono italic tracking-widest text-orange-500 uppercase bg-black">
-      Syncing_Neural_Link...
+      Memuat dashboard...
     </div>
   )
 
   return (
     <div className="-mt-16 h-screen w-full bg-[#010101] text-white overflow-hidden relative font-poppins selection:bg-orange-500/30">
 
-      {/* 🌊 BACKGROUND */}
+      {/* BACKGROUND */}
       <div className="absolute inset-0 z-0 pointer-events-none">
         <motion.div
           animate={{ y: ['-50%', '0%'] }}
@@ -479,11 +467,11 @@ export default function NeuralDashboardFixed() {
             <h1 className="text-2xl italic font-black leading-none tracking-tighter uppercase text-white/90">
               PROGRESS<span className="text-orange-500">_</span>BELAJAR
             </h1>
-            <p className="text-[8px] tracking-[0.5em] text-gray-700 font-bold uppercase mt-2">Experimental Learning Interface</p>
+            <p className="text-[8px] tracking-[0.5em] text-gray-700 font-bold uppercase mt-2">Pantau Capaian & Pilih Modul</p>
           </motion.div>
         </div>
 
-        {/* 2. PROGRESS CORE — id untuk tutorial highlight */}
+        {/* 2. PROGRESS CORE */}
         <div
           id="tutorial-progress"
           className="absolute top-[350px] left-0 -translate-y-1/2 z-50"
@@ -510,7 +498,7 @@ export default function NeuralDashboardFixed() {
                   <span className="block text-6xl italic font-black leading-none tracking-tighter text-white opacity-90">
                     {totalStats.percent}<span className="text-2xl font-light text-orange-500">%</span>
                   </span>
-                  <span className="text-[7px] tracking-[0.5em] text-orange-600 font-black uppercase mt-3 block">Semua Progres</span>
+                  <span className="text-[7px] tracking-[0.5em] text-orange-600 font-black uppercase mt-3 block">Total Capaian</span>
                 </motion.div>
                 <div className="w-10 h-px mt-6 mb-6 bg-orange-900/30" />
                 <div className="flex flex-col gap-4">
@@ -522,7 +510,7 @@ export default function NeuralDashboardFixed() {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="w-1.5 h-1.5 bg-orange-600 rounded-full animate-pulse" />
-                    <p className="text-xl italic font-black text-orange-500">0{activeIndex + 1}</p>
+                    <p className="text-xl italic font-black text-orange-500">Modul {activeIndex + 1}</p>
                   </div>
                 </div>
               </div>
@@ -553,8 +541,7 @@ export default function NeuralDashboardFixed() {
                   style={{ originX: '-250px', originY: '50%' }}
                   className="absolute top-[42%] left-[18%] -translate-y-1/2"
                 >
-                  <Link href={`/learn/${module.id}/intro`}>
-                    {/* id tutorial hanya di orbital yang aktif */}
+                  <div>
                     <div
                       id={index === activeIndex ? 'tutorial-orbital-zone' : undefined}
                       className={`w-40 h-40 rounded-full bg-[#0a0a0a] border-2 flex flex-col items-center justify-center text-center shadow-[0_0_50px_rgba(0,0,0,0.8)] cursor-pointer group relative overflow-hidden ${index === activeIndex ? colorStyles[module.color].border : 'border-white/5'}`}
@@ -563,14 +550,14 @@ export default function NeuralDashboardFixed() {
                       <span className="relative z-10 mb-2 text-3xl">{module.icon}</span>
                       <h4 className="relative z-10 text-[9px] font-black uppercase tracking-[0.15em] leading-tight max-w-[100px]">{module.title}</h4>
                     </div>
-                  </Link>
+                  </div>
                 </motion.div>
               )
             })}
           </div>
         </div>
 
-        {/* 4. DESCRIPTION POPUP — id untuk tutorial highlight */}
+        {/* 4. DESCRIPTION POPUP */}
         <div
           id="tutorial-description"
           className="absolute top-1/2 right-0 -translate-y-1/2 w-[360px] z-[50]"
@@ -584,21 +571,27 @@ export default function NeuralDashboardFixed() {
               >
                 <div className={`absolute -top-12 -right-12 w-32 h-32 blur-[60px] opacity-20 ${colorStyles[currentActiveModule.color].glow}`} />
                 <div className="relative z-10">
-                  <span className={`text-[9px] font-black tracking-[0.4em] uppercase mb-4 block ${colorStyles[currentActiveModule.color].text}`}>Sector_Specification</span>
+                  <span className={`text-[9px] font-black tracking-[0.4em] uppercase mb-4 block ${colorStyles[currentActiveModule.color].text}`}>Detail Modul</span>
                   <h3 className="mb-4 text-3xl italic font-black leading-none tracking-tighter uppercase text-white/90">{currentActiveModule.title}</h3>
                   <p className="mb-8 text-xs italic font-medium leading-relaxed text-gray-500">"{currentActiveModule.description}"</p>
                   <div className="space-y-4">
                     <div className="flex items-end justify-between">
-                      <span className="text-[8px] font-bold text-gray-600 uppercase tracking-widest">Mastery</span>
+                      <span className="text-[8px] font-bold text-gray-600 uppercase tracking-widest">Progress</span>
                       <span className="text-xl italic font-black">{currentActiveModule.progress}%</span>
                     </div>
                     <div className="w-full h-1 overflow-hidden border rounded-full bg-white/5 border-white/5">
                       <motion.div initial={{ width: 0 }} animate={{ width: `${currentActiveModule.progress}%` }} className={`h-full ${colorStyles[currentActiveModule.color].glow} bg-current transition-all duration-1000`} />
                     </div>
+                    <div className="flex justify-between text-[9px] text-gray-500">
+                      <span>Topik: {currentActiveModule.completedTopics}/{currentActiveModule.totalTopics}</span>
+                      <span className={currentActiveModule.progress === 100 ? 'text-emerald-400' : 'text-gray-500'}>
+                        {currentActiveModule.progress === 100 ? '✓ Selesai' : 'Sedang Berjalan'}
+                      </span>
+                    </div>
                   </div>
-                  <Link href={`/learn/${currentActiveModule.id}/intro`}>
+                  <Link href={`/learn/${currentActiveModule.id}/first`}>
                     <button className={`mt-10 w-full py-4 rounded-2xl border ${colorStyles[currentActiveModule.color].border} text-[9px] font-black tracking-[0.3em] uppercase hover:bg-white/10 transition-all`}>
-                      Connect_Neural_Link
+                      {currentActiveModule.progress === 0 ? 'Mulai Belajar' : currentActiveModule.progress === 100 ? 'Ulangi Materi' : 'Lanjutkan Belajar'}
                     </button>
                   </Link>
                 </div>
@@ -610,19 +603,19 @@ export default function NeuralDashboardFixed() {
         {/* 5. NAVIGATION CONTROLS */}
         <div className="absolute bottom-12 left-1/2 -translate-x-1/2 z-[120] flex flex-col items-center gap-5">
           <div id="tutorial-nav" className="flex items-center gap-10 p-2 px-8 border rounded-full bg-black/60 border-white/10 backdrop-blur-md">
-            <button onClick={handlePrev} className="text-gray-600 hover:text-orange-500 transition-colors font-black text-[10px] tracking-widest">PREV</button>
+            <button onClick={handlePrev} className="text-gray-600 hover:text-orange-500 transition-colors font-black text-[10px] tracking-widest">SEBELUMNYA</button>
             <div className="flex gap-2">
               {modules.map((_, i) => (
                 <div key={i} className={`h-1 rounded-full transition-all duration-500 ${i === activeIndex ? 'bg-orange-500 w-10' : 'bg-white/10 w-2'}`} />
               ))}
             </div>
-            <button onClick={handleNext} className="text-gray-600 hover:text-orange-500 transition-colors font-black text-[10px] tracking-widest">NEXT</button>
+            <button onClick={handleNext} className="text-gray-600 hover:text-orange-500 transition-colors font-black text-[10px] tracking-widest">SELANJUTNYA</button>
           </div>
+          <p className="text-[8px] text-gray-700 tracking-widest uppercase">Gunakan tombol untuk memilih modul</p>
         </div>
 
       </div>
 
-      {/* ── TUTORIAL OVERLAY (render di luar container supaya fixed bisa full screen) ── */}
       <AnimatePresence>
         {showTutorial && (
           <TutorialOverlay

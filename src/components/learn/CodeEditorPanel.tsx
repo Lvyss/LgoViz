@@ -6,10 +6,14 @@ import dynamic from 'next/dynamic'
 const MonacoEditor = dynamic(() => import('@monaco-editor/react'), {
   ssr: false,
   loading: () => (
-    <div className="h-full flex items-center justify-center bg-[#08080c]">
-      <div className="flex flex-col items-center gap-4">
-        <div className="w-8 h-8 border-2 rounded-full border-orange-500/20 border-t-orange-500 animate-spin" />
-        <span className="text-[10px] font-black tracking-[0.3em] text-slate-600 uppercase">Loading_Editor...</span>
+    <div className="h-full flex items-center justify-center bg-[#030304]">
+      <div className="flex flex-col items-center gap-3">
+        <div className="relative w-8 h-8">
+          <div className="absolute inset-0 border-2 rounded-full border-orange-500/15 border-t-orange-500 animate-spin" />
+        </div>
+        <span className="text-[9px] font-black tracking-[0.4em] text-slate-700 uppercase">
+          Memuat Editor...
+        </span>
       </div>
     </div>
   ),
@@ -17,225 +21,279 @@ const MonacoEditor = dynamic(() => import('@monaco-editor/react'), {
 
 interface CodeEditorPanelProps {
   starterCode: string
-  solutionCode: string
   onCodeChange?: (code: string) => void
   onRun?: (code: string) => void
   isRunning?: boolean
   highlightedLine?: number
   onShowMaterial?: () => void
+  onShowChallenge?: () => void
+  onShowQuiz?: () => void
+  challengeCompleted?: boolean
+  quizCompleted?: boolean
+  isChallengeMode?: boolean
+  hasChallenge?: boolean
 }
 
 export default function CodeEditorPanel({
   starterCode,
-  solutionCode,
   onCodeChange,
   onRun,
   isRunning = false,
   highlightedLine = 0,
   onShowMaterial,
+  onShowChallenge,
+  onShowQuiz,
+  challengeCompleted = false,
+  quizCompleted = false,
+  isChallengeMode = false,
+  hasChallenge = false,
 }: CodeEditorPanelProps) {
   const [code, setCode] = useState(starterCode)
-  const [showSolution, setShowSolution] = useState(false)
-  const editorRef = useRef<any>(null)
-  const decorationRef = useRef<string[]>([])
-  const lastHighlightedLineRef = useRef<number>(0)
+  const editorRef       = useRef<any>(null)
+  const decorationRef   = useRef<string[]>([])
+  const lastLineRef     = useRef<number>(0)
 
   useEffect(() => {
     setCode(starterCode)
-    setShowSolution(false)
-    lastHighlightedLineRef.current = 0
+    lastLineRef.current = 0
   }, [starterCode])
 
   const clearDecorations = () => {
     if (editorRef.current && decorationRef.current.length > 0) {
       try {
         decorationRef.current = editorRef.current.deltaDecorations(decorationRef.current, [])
-      } catch (e) { /* silent */ }
+      } catch { /* silent */ }
     }
   }
 
   useEffect(() => {
     if (!editorRef.current) return
-
-    const timeoutId = setTimeout(() => {
-      if (lastHighlightedLineRef.current === highlightedLine) return
-      lastHighlightedLineRef.current = highlightedLine
-
+    const tid = setTimeout(() => {
+      if (lastLineRef.current === highlightedLine) return
+      lastLineRef.current = highlightedLine
       clearDecorations()
       if (highlightedLine <= 0) return
 
-      const editor = editorRef.current
-      const model = editor.getModel()
+      const editor    = editorRef.current
+      const model     = editor.getModel()
       if (!model) return
-
       const lineCount = model.getLineCount()
-      const targetLine = Math.min(Math.max(highlightedLine, 1), lineCount)
+      const target    = Math.min(Math.max(highlightedLine, 1), lineCount)
 
       try {
         decorationRef.current = editor.deltaDecorations([], [{
           range: {
-            startLineNumber: targetLine,
-            startColumn: 1,
-            endLineNumber: targetLine,
-            endColumn: model.getLineMaxColumn(targetLine),
+            startLineNumber: target, startColumn: 1,
+            endLineNumber: target,   endColumn: model.getLineMaxColumn(target),
           },
           options: {
             isWholeLine: true,
-            className: 'highlighted-line',
-            glyphMarginClassName: 'highlighted-line-glyph',
+            className: 'lgoviz-highlighted-line',
+            glyphMarginClassName: 'lgoviz-highlighted-glyph',
           },
         }])
-        editor.revealLineInCenterIfOutsideViewport(targetLine)
-      } catch (e) { /* silent */ }
+        editor.revealLineInCenterIfOutsideViewport(target)
+      } catch { /* silent */ }
     }, 50)
-
-    return () => clearTimeout(timeoutId)
+    return () => clearTimeout(tid)
   }, [highlightedLine])
 
   const handleEditorDidMount = (editor: any, monaco: any) => {
     editorRef.current = editor
 
-    // Inject Custom CSS for Highlighting (Connection to Visualizer)
-    const styleId = 'monaco-highlight-styles'
+    // inject highlight styles sekali saja
+    const styleId = 'lgoviz-editor-styles'
     if (!document.getElementById(styleId)) {
-      const style = document.createElement('style')
-      style.id = styleId
-      style.textContent = `
-        .highlighted-line {
-          background-color: rgba(249, 115, 22, 0.1) !important;
-          border-left: 4px solid #f97316 !important;
-          box-shadow: inset 20px 0 30px -15px rgba(249, 115, 22, 0.15);
+      const s = document.createElement('style')
+      s.id = styleId
+      s.textContent = `
+        .lgoviz-highlighted-line {
+          background-color: rgba(249,115,22,0.08) !important;
+          border-left: 2px solid rgba(249,115,22,0.7) !important;
         }
-        .highlighted-line-glyph {
+        .lgoviz-highlighted-glyph {
           background: #f97316 !important;
-          width: 5px !important;
-          margin-left: 5px;
+          width: 3px !important;
+          margin-left: 7px;
           border-radius: 99px;
-          box-shadow: 0 0 10px #f97316;
+          box-shadow: 0 0 8px rgba(249,115,22,0.6);
         }
       `
-      document.head.appendChild(style)
+      document.head.appendChild(s)
     }
 
-    // Deep Theme for LgoViz
     monaco.editor.defineTheme('lgoviz-dark', {
       base: 'vs-dark',
       inherit: true,
       rules: [
-        { token: 'comment', foreground: '5d6d7e', fontStyle: 'italic' },
-        { token: 'keyword', foreground: '569cd6', fontStyle: 'bold' },
-        { token: 'number', foreground: 'b5cea8' },
-        { token: 'string', foreground: 'ce9178' },
-        { token: 'operator', foreground: 'd4d4d4' },
+        { token: 'comment',   foreground: '3d4f5c', fontStyle: 'italic' },
+        { token: 'keyword',   foreground: '5b9bd5', fontStyle: 'bold'   },
+        { token: 'number',    foreground: 'a8c4a0' },
+        { token: 'string',    foreground: 'c08c70' },
+        { token: 'operator',  foreground: '8899aa' },
+        { token: 'type',      foreground: '4ec9b0' },
+        { token: 'delimiter', foreground: '566370' },
       ],
       colors: {
-        'editor.background': '#08080c',
-        'editor.lineHighlightBackground': '#11111a',
-        'editorLineNumber.foreground': '#334155',
-        'editorLineNumber.activeForeground': '#f97316',
+        'editor.background':                  '#030304',
+        'editor.foreground':                  '#94a3b8',
+        'editor.lineHighlightBackground':     '#0a0a0f',
+        'editorLineNumber.foreground':        '#222836',
+        'editorLineNumber.activeForeground':  '#ea580c',
+        'editor.selectionBackground':         '#1e3a5260',
+        'editorIndentGuide.background':       '#0d1117',
         'editorIndentGuide.activeBackground': '#1e293b',
-        'editor.selectionBackground': '#264f7866',
-        'editorCursor.foreground': '#f97316',
+        'editorCursor.foreground':            '#ea580c',
+        'editorGutter.background':            '#030304',
+        'editorWidget.background':            '#0a0a0f',
+        'input.background':                   '#0a0a0f',
+        'focusBorder':                        '#ea580c40',
+        'scrollbar.shadow':                   '#00000000',
+        'scrollbarSlider.background':         '#1e293b60',
+        'scrollbarSlider.hoverBackground':    '#1e293b',
       },
     })
     monaco.editor.setTheme('lgoviz-dark')
   }
 
   const handleCodeChange = (value: string | undefined) => {
-    const newCode = value || ''
-    setCode(newCode)
-    onCodeChange?.(newCode)
-    lastHighlightedLineRef.current = 0
+    const v = value || ''
+    setCode(v)
+    onCodeChange?.(v)
+    lastLineRef.current = 0
     clearDecorations()
   }
 
-  const handleShowSolution = () => {
-    const targetCode = showSolution ? starterCode : solutionCode
-    setCode(targetCode)
-    onCodeChange?.(targetCode)
-    setShowSolution(!showSolution)
-    lastHighlightedLineRef.current = 0
-    clearDecorations()
-  }
+  const isQuizLocked = hasChallenge && !challengeCompleted && !quizCompleted
 
   return (
-    <div className="flex flex-col h-full bg-[#08080c] overflow-hidden">
-      
-      {/* 🚀 Editor Header: Compact & Functional */}
-<div className="flex items-center justify-between px-5 py-3 border-b border-white/[0.03] bg-white/[0.01] backdrop-blur-md shrink-0">
-  <div className="flex items-center gap-5">
-    <div className="flex items-center gap-2">
-      <div className="w-1.5 h-1.5 rounded-full bg-orange-500 shadow-[0_0_8px_#f97316]" />
-      <span className="text-[10px] font-black tracking-[0.2em] text-slate-500 uppercase">Editor_Main</span>
-    </div>
+    <div className="flex flex-col h-full bg-[#030304] overflow-hidden">
 
-    {/* Running Indicator Label */}
-    {highlightedLine > 0 && (
-      <div className="flex items-center gap-2.5 px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/20 animate-in fade-in slide-in-from-left-2 duration-300">
-        <span className="relative flex h-1.5 w-1.5">
-          <span className="absolute inline-flex w-full h-full bg-orange-400 rounded-full opacity-75 animate-ping"></span>
-          <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-orange-500"></span>
-        </span>
-        <span className="text-[9px] font-mono font-black text-orange-400 tracking-tighter uppercase">
-          Active_Line: {highlightedLine}
-        </span>
-      </div>
-    )}
-  </div>
+      {/* ── TOP BAR ───────────────────────────────────────────────────────── */}
+      <div className="flex items-center justify-between px-4 py-2 border-b border-white/[0.05] shrink-0 bg-[#040406]">
 
-  {/* Action Buttons */}
-  <div className="flex items-center gap-2">
-    
-    {/* ✅ TOMBOL MATERI - TAMBAHKAN INI */}
-    <button
-      onClick={onShowMaterial}
-      className="px-3 py-1.5 text-[9px] font-black tracking-widest rounded-lg border border-white/5 bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-all"
-    >
-      📖 MATERI
-    </button>
+        {/* kiri: mode label + active line indicator */}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <div className={`w-1.5 h-1.5 rounded-full ${
+              isChallengeMode ? 'bg-purple-400' : 'bg-orange-500'
+            }`} />
+            <span className="text-[9px] font-black tracking-[0.25em] text-slate-600 uppercase">
+              {isChallengeMode ? 'Challenge' : 'Editor'}
+            </span>
+          </div>
 
-    <button
-      onClick={handleShowSolution}
-      className={`px-3 py-1.5 text-[9px] font-black tracking-widest rounded-lg border transition-all ${
-        showSolution 
-        ? 'bg-orange-500/10 border-orange-500/40 text-orange-500' 
-        : 'bg-white/5 border-white/5 text-slate-400 hover:text-white hover:bg-white/10'
-      }`}
-    >
-      {showSolution ? 'RESET_CHALLENGE' : 'VIEW_SOLUTION'}
-    </button>
-
-    <div className="h-4 w-[1px] bg-white/10 mx-1" />
-
-    <button
-      onClick={() => onRun?.(code)}
-      disabled={isRunning}
-      className={`group relative flex items-center gap-2 px-6 py-1.5 text-[10px] font-black tracking-[0.2em] text-white transition-all rounded-lg overflow-hidden ${
-        isRunning 
-        ? 'bg-slate-800 cursor-not-allowed' 
-        : 'bg-emerald-600 hover:bg-emerald-500 shadow-[0_5px_15px_rgba(16,185,129,0.2)] active:scale-95'
-      }`}
-    >
-      {isRunning ? (
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 border-2 rounded-full border-white/20 border-t-white animate-spin" />
-          <span className="italic uppercase opacity-70">Processing...</span>
+          {/* active line badge — muncul saat ada highlight */}
+          {highlightedLine > 0 && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full
+              bg-orange-500/8 border border-orange-500/20
+              animate-in fade-in slide-in-from-left-1 duration-200">
+              {/* ping dot */}
+              <span className="relative flex h-1.5 w-1.5 shrink-0">
+                <span className="absolute inline-flex w-full h-full bg-orange-400 rounded-full opacity-60 animate-ping" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-orange-500" />
+              </span>
+              <span className="text-[8px] font-mono font-black text-orange-400 tracking-tight">
+                Baris {highlightedLine}
+              </span>
+            </div>
+          )}
         </div>
-      ) : (
-        <>
-          <span className="transition-transform group-hover:scale-110">▶</span>
-          <span>RUN_CODE</span>
-        </>
-      )}
-    </button>
-  </div>
-</div>
 
-      {/* 📝 Editor Area */}
+        {/* kanan: action buttons + run */}
+        <div className="flex items-center gap-1.5">
+
+          {/* ── Materi ── */}
+          <button id="btn-materi"
+            onClick={onShowMaterial}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg
+              border border-white/[0.06] bg-white/[0.02]
+              text-slate-500 hover:text-white hover:border-white/15 hover:bg-white/[0.04]
+              transition-all duration-150 group"
+          >
+            <span className="text-xs">📖</span>
+            <span className="text-[9px] font-black tracking-widest uppercase">Materi</span>
+          </button>
+
+          {/* ── Challenge (hanya jika ada) ── */}
+          {hasChallenge && (
+            <button id="btn-challenge"
+              onClick={onShowChallenge}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border
+                transition-all duration-150 ${
+                  challengeCompleted
+                    ? 'border-emerald-500/25 bg-emerald-500/8 text-emerald-400'
+                    : 'border-orange-500/20 bg-orange-500/5 text-orange-400 hover:bg-orange-500/10 hover:border-orange-500/35'
+                }`}
+            >
+              <span className="text-xs">{challengeCompleted ? '✅' : '⚔️'}</span>
+              <span className="text-[9px] font-black tracking-widest uppercase">
+                {challengeCompleted ? 'Done' : 'Challenge'}
+              </span>
+            </button>
+          )}
+
+          {/* ── Quiz ── */}
+          <button id="btn-quiz"
+            onClick={onShowQuiz}
+            disabled={isQuizLocked}
+            title={isQuizLocked ? 'Selesaikan challenge dulu' : ''}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border
+              transition-all duration-150 ${
+                quizCompleted
+                  ? 'border-emerald-500/25 bg-emerald-500/8 text-emerald-400'
+                  : isQuizLocked
+                    ? 'border-white/5 bg-white/[0.01] text-slate-700 cursor-not-allowed'
+                    : 'border-blue-500/20 bg-blue-500/5 text-blue-400 hover:bg-blue-500/10 hover:border-blue-500/35'
+              }`}
+          >
+            <span className="text-xs">{quizCompleted ? '✅' : isQuizLocked ? '🔒' : '🧠'}</span>
+            <span className="text-[9px] font-black tracking-widest uppercase">
+              {quizCompleted ? 'Done' : 'Quiz'}
+            </span>
+          </button>
+
+          {/* divider */}
+          <div className="w-px h-5 bg-white/[0.06] mx-1" />
+
+          {/* ── Run Code ── */}
+          <button id="btn-run"
+            onClick={() => onRun?.(code)}
+            disabled={isRunning}
+            className={`flex items-center gap-2 px-4 py-1.5 rounded-lg
+              text-[9px] font-black tracking-[0.15em] uppercase
+              transition-all duration-150 ${
+                isRunning
+                  ? 'bg-white/[0.03] border border-white/[0.06] text-slate-600 cursor-not-allowed'
+                  : 'bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-500/50 active:scale-95 shadow-[0_0_16px_rgba(16,185,129,0.2)]'
+              }`}
+          >
+            {isRunning ? (
+              <>
+                <div className="w-3 h-3 border-2 rounded-full border-white/15 border-t-slate-400 animate-spin" />
+                <span>Proses...</span>
+              </>
+            ) : (
+              <>
+                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z"/>
+                </svg>
+                <span>Jalankan</span>
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* ── EDITOR AREA ───────────────────────────────────────────────────── */}
       <div className="relative flex-1 min-h-0">
-        {/* Deep Gradient for Professional Look */}
-        <div className="absolute inset-x-0 top-0 h-8 bg-gradient-to-b from-[#08080c] to-transparent z-10 pointer-events-none opacity-50" />
-        <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-[#08080c] to-transparent z-10 pointer-events-none opacity-50" />
+
+        {/* fade top */}
+        <div className="absolute inset-x-0 top-0 h-6 z-10 pointer-events-none
+          bg-gradient-to-b from-[#030304] to-transparent opacity-60" />
+        {/* fade bottom */}
+        <div className="absolute inset-x-0 bottom-0 h-6 z-10 pointer-events-none
+          bg-gradient-to-t from-[#030304] to-transparent opacity-60" />
 
         <MonacoEditor
           height="100%"
@@ -245,21 +303,33 @@ export default function CodeEditorPanel({
           onChange={handleCodeChange}
           onMount={handleEditorDidMount}
           options={{
-            minimap: { enabled: false },
-            fontSize: 14,
-            lineNumbers: 'on',
-            automaticLayout: true,
-            scrollBeyondLastLine: false,
-            fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
-            renderLineHighlight: 'all',
-            glyphMargin: true,
-            padding: { top: 20, bottom: 20 },
-            cursorSmoothCaretAnimation: 'on',
-            smoothScrolling: true,
-            lineHeight: 24,
-            bracketPairColorization: { enabled: true },
-            formatOnPaste: true,
-            wordWrap: 'on',
+            minimap:                   { enabled: false },
+            fontSize:                  13,
+            lineNumbers:               'on',
+            automaticLayout:           true,
+            scrollBeyondLastLine:      false,
+            fontFamily:                "'JetBrains Mono', 'Cascadia Code', 'Fira Code', monospace",
+            fontLigatures:             true,
+            renderLineHighlight:       'gutter',
+            glyphMargin:               true,
+            padding:                   { top: 16, bottom: 16 },
+            cursorSmoothCaretAnimation:'on',
+            smoothScrolling:           true,
+            lineHeight:                22,
+            letterSpacing:             0.3,
+            bracketPairColorization:   { enabled: true },
+            formatOnPaste:             true,
+            wordWrap:                  'on',
+            scrollbar: {
+              verticalScrollbarSize:   4,
+              horizontalScrollbarSize: 4,
+              useShadows:              false,
+            },
+            overviewRulerLanes:        0,
+            hideCursorInOverviewRuler: true,
+            overviewRulerBorder:       false,
+            renderIndentGuides:        true,
+            occurrencesHighlight:      'off',
           }}
         />
       </div>

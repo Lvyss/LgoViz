@@ -26,13 +26,15 @@ export default function AdminLayout({
     })
   }, [router])
 
-  const navItems = [
-    { href: '/admin', label: 'Dashboard', icon: '📊' },
-    { href: '/admin/topics', label: 'Topik', icon: '📚' },
-    { href: '/admin/questions', label: 'Soal Quiz', icon: '📝' },
-    { href: '/admin/materials', label: 'Materi', icon: '✏️' },
-    { href: '/admin/students', label: 'Siswa', icon: '👥' },
-  ]
+// Di navItems, tambahkan:
+const navItems = [
+  { href: '/admin', label: 'Dashboard', icon: '📊' },
+  { href: '/admin/topics', label: 'Topik', icon: '📚' },
+  { href: '/admin/challenges', label: 'Challenges', icon: '⚡' },  // ← Tambah ini
+  { href: '/admin/questions', label: 'Soal Quiz', icon: '📝' },
+  { href: '/admin/materials', label: 'Materi', icon: '✏️' },
+  { href: '/admin/students', label: 'Siswa', icon: '👥' },
+]
 
   return (
     <div className="flex min-h-screen bg-[#020202] text-white font-poppins selection:bg-orange-500/30">
