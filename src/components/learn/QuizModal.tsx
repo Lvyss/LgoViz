@@ -1,13 +1,12 @@
-// src/components/learn/QuizModal.tsx
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 interface Question {
   id: string
   question_text: string
-  options: { option_label: string; option_text: string }[]
+  options: { option_label: string; option_text: string; is_correct?: boolean }[]
 }
 
 interface QuizResult {
@@ -38,208 +37,371 @@ interface QuizModalProps {
 }
 
 export default function QuizModal({
-  isOpen,
-  questions,
-  currentQuestionIndex,
-  answers,
-  totalProgress,
-  result,
-  isComplete,
-  isLoading,
-  onAnswer,
-  onNext,
-  onPrev,
-  onSubmit,
-  onRetry,
-  onClose,
-  onNextTopic,
+  isOpen, questions, currentQuestionIndex, answers, totalProgress,
+  result, isComplete, isLoading,
+  onAnswer, onNext, onPrev, onSubmit, onRetry, onClose, onNextTopic,
   nextTopicTitle,
 }: QuizModalProps) {
-  const currentQuestion = questions[currentQuestionIndex]
-  const selectedAnswer = currentQuestion
+  const currentQuestion  = questions[currentQuestionIndex]
+  const selectedAnswer   = currentQuestion
     ? answers.find(a => a.questionId === currentQuestion.id)?.selectedAnswer
     : undefined
+  const answeredCount    = answers.length
+  const allAnswered      = answeredCount >= totalProgress.total
 
-  // Reset scroll when modal opens
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = ''
-    }
-    return () => {
-      document.body.style.overflow = ''
-    }
+    if (isOpen) document.body.style.overflow = 'hidden'
+    else        document.body.style.overflow = ''
+    return () => { document.body.style.overflow = '' }
   }, [isOpen])
 
-  if (!isOpen) return null
-
   return (
-    <div className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
-      <motion.div
-        initial={{ scale: 0.95, opacity: 0, y: 20 }}
-        animate={{ scale: 1, opacity: 1, y: 0 }}
-        exit={{ scale: 0.95, opacity: 0, y: 20 }}
-        className="bg-[#0a0a0f] border border-white/10 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl"
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-white/10 bg-emerald-500/5">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-emerald-500/20">
-              <span className="text-xl">📝</span>
-            </div>
-            <div>
-              <h2 className="text-sm font-black tracking-wider text-white uppercase">System_Quiz</h2>
-              <p className="text-[10px] text-gray-500">Uji pemahamanmu setelah belajar</p>
-            </div>
-          </div>
-          <button onClick={onClose} className="text-xl text-gray-500 transition-colors hover:text-white">✕</button>
-        </div>
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
 
-        {/* Content */}
-        <div className="flex-1 p-6 overflow-y-auto custom-scrollbar">
-          {isLoading ? (
-            <div className="flex flex-col items-center justify-center gap-4 py-12">
-              <div className="w-10 h-10 border-2 rounded-full border-emerald-500/20 border-t-emerald-500 animate-spin" />
-              <span className="text-[10px] font-black tracking-[0.3em] text-slate-500 uppercase">Loading_Questions...</span>
-            </div>
-          ) : isComplete && result ? (
-            // Result View
-            <div className="space-y-6">
-              {/* Score Banner */}
-              <div className={`text-center p-6 rounded-2xl ${result.passed ? 'bg-emerald-500/10 border border-emerald-500/20' : 'bg-red-500/10 border border-red-500/20'}`}>
-                <div className={`text-5xl font-black mb-2 ${result.passed ? 'text-emerald-400' : 'text-red-400'}`}>
-                  {result.score}%
+          {/* backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            onClick={onClose}
+          />
+
+          {/* modal */}
+          <motion.div
+            initial={{ scale: 0.97, opacity: 0, y: 12 }}
+            animate={{ scale: 1,    opacity: 1, y: 0  }}
+            exit={{   scale: 0.97, opacity: 0, y: 12  }}
+            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+            className="relative w-full max-w-xl max-h-[88vh] flex flex-col rounded-2xl overflow-hidden
+              bg-[#040406] border border-white/[0.07]
+              shadow-[0_32px_80px_rgba(0,0,0,0.8)]"
+          >
+
+            {/* ── HEADER ────────────────────────────────────────────────── */}
+            <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/[0.05] shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center justify-center w-8 h-8 border rounded-lg bg-blue-500/10 border-blue-500/20 shrink-0">
+                  <span className="text-sm">🧠</span>
                 </div>
-                <p className="text-[10px] text-gray-500 uppercase tracking-widest">
-                  {result.correctAnswers} / {result.totalQuestions} Correct
-                </p>
+                <div>
+                  <h2 className="text-xs font-black tracking-[0.2em] text-white uppercase">Quiz</h2>
+                  <p className="text-[9px] text-slate-600 mt-0.5">
+                    Uji pemahaman materi yang sudah dipelajari
+                  </p>
+                </div>
               </div>
 
-              {/* Answers Breakdown */}
-              <div className="space-y-3 max-h-[300px] overflow-y-auto">
-                {result.answers.map((answer, idx) => {
-                  const question = questions.find(q => q.id === answer.questionId)
-                  const correctOption = question?.options.find((opt: any) => opt.is_correct)
-                  return (
-                    <div key={answer.questionId} className="p-3 border rounded-xl bg-white/5 border-white/10">
-                      <div className="flex items-start gap-3">
-                        <div className={`mt-0.5 w-5 h-5 flex items-center justify-center rounded-lg text-[10px] font-bold ${answer.isCorrect ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
-                          {answer.isCorrect ? '✓' : '✕'}
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-300">{question?.question_text}</p>
-                          <p className="text-[9px] text-gray-500 mt-1">
-                            Jawaban: {answer.selectedAnswer}
-                            {!answer.isCorrect && <span className="ml-2 text-emerald-400">✓ {correctOption?.option_label}</span>}
-                          </p>
-                        </div>
+              <div className="flex items-center gap-2">
+                {/* answered counter */}
+                {!isComplete && !isLoading && totalProgress.total > 0 && (
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full
+                    bg-white/[0.03] border border-white/[0.06]">
+                    <span className="text-[8px] font-mono font-black text-slate-500">
+                      {answeredCount}/{totalProgress.total}
+                    </span>
+                  </div>
+                )}
+                <button
+                  onClick={onClose}
+                  className="w-7 h-7 rounded-lg flex items-center justify-center
+                    border border-white/[0.06] bg-white/[0.02]
+                    text-slate-600 hover:text-white hover:bg-white/[0.05]
+                    transition-all text-sm"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            {/* ── BODY ──────────────────────────────────────────────────── */}
+            <div className="flex-1 px-5 py-5 overflow-y-auto custom-scrollbar">
+
+              {/* Loading */}
+              {isLoading && (
+                <div className="flex flex-col items-center justify-center gap-4 py-16">
+                  <div className="relative w-8 h-8">
+                    <div className="absolute inset-0 border-2 rounded-full border-orange-500/15 border-t-orange-500 animate-spin" />
+                  </div>
+                  <p className="text-[9px] font-black tracking-[0.4em] text-slate-700 uppercase">
+                    Memuat Pertanyaan...
+                  </p>
+                </div>
+              )}
+
+              {/* Result view */}
+              {!isLoading && isComplete && result && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="space-y-4"
+                >
+                  {/* score banner */}
+                  <div className={`text-center py-6 px-4 rounded-xl border ${
+                    result.passed
+                      ? 'bg-emerald-500/8 border-emerald-500/20'
+                      : 'bg-red-500/8 border-red-500/15'
+                  }`}>
+                    <div className={`text-5xl font-black tracking-tighter mb-1 ${
+                      result.passed ? 'text-emerald-400' : 'text-red-400'
+                    }`}>
+                      {result.score}%
+                    </div>
+                    <p className="text-[9px] text-slate-600 uppercase tracking-[0.3em]">
+                      {result.correctAnswers} dari {result.totalQuestions} benar
+                    </p>
+                    <div className={`mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full
+                      text-[9px] font-black tracking-widest uppercase border ${
+                        result.passed
+                          ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400'
+                          : 'bg-red-500/10 border-red-500/20 text-red-400'
+                      }`}>
+                      {result.passed ? '✓ Lulus' : '✕ Belum Lulus'}
+                    </div>
+                  </div>
+
+                  {/* answers breakdown */}
+                  <div>
+                    <p className="text-[8px] font-black tracking-[0.3em] text-slate-600 uppercase mb-2">
+                      Rincian Jawaban
+                    </p>
+                    <div className="space-y-1.5 max-h-64 overflow-y-auto custom-scrollbar pr-1">
+                      {result.answers.map((ans, idx) => {
+                        const q           = questions.find(q => q.id === ans.questionId)
+                        const correctOpt  = q?.options.find((o: any) => o.is_correct)
+                        return (
+                          <div key={ans.questionId}
+                            className={`flex items-start gap-3 p-3 rounded-xl border ${
+                              ans.isCorrect
+                                ? 'bg-emerald-500/5 border-emerald-500/15'
+                                : 'bg-red-500/5 border-red-500/10'
+                            }`}>
+                            {/* icon */}
+                            <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
+                              ans.isCorrect
+                                ? 'bg-emerald-500/15 border border-emerald-500/25'
+                                : 'bg-red-500/15 border border-red-500/20'
+                            }`}>
+                              {ans.isCorrect
+                                ? <svg className="w-3 h-3 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7"/></svg>
+                                : <svg className="w-3 h-3 text-red-400"     fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}   d="M6 18L18 6M6 6l12 12"/></svg>
+                              }
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[10px] text-slate-400 leading-snug line-clamp-2">
+                                {q?.question_text}
+                              </p>
+                              <div className="flex flex-wrap items-center gap-2 mt-1">
+                                <span className="text-[8px] text-slate-700">
+                                  Jawabanmu: <span className="font-bold text-slate-500">{ans.selectedAnswer}</span>
+                                </span>
+                                {!ans.isCorrect && correctOpt && (
+                                  <span className="text-[8px] text-emerald-600">
+                                    Benar: <span className="font-bold">{correctOpt.option_label}</span>
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Question view */}
+              {!isLoading && !isComplete && currentQuestion && (
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={currentQuestionIndex}
+                    initial={{ opacity: 0, x: 10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{   opacity: 0, x: -10 }}
+                    transition={{ duration: 0.18 }}
+                    className="space-y-4"
+                  >
+                    {/* progress bar */}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[8px] font-black tracking-[0.3em] text-slate-600 uppercase">
+                          Pertanyaan {currentQuestionIndex + 1} dari {totalProgress.total}
+                        </span>
+                        <span className="text-[8px] font-mono text-slate-700">
+                          {Math.round(totalProgress.percentage)}%
+                        </span>
+                      </div>
+                      <div className="h-[3px] w-full bg-white/[0.05] rounded-full overflow-hidden">
+                        <motion.div
+                          className="h-full rounded-full bg-gradient-to-r from-orange-600 to-orange-400"
+                          initial={{ width: 0 }}
+                          animate={{ width: `${totalProgress.percentage}%` }}
+                          transition={{ duration: 0.4 }}
+                        />
                       </div>
                     </div>
-                  )
-                })}
-              </div>
+
+                    {/* question text */}
+                    <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06]">
+                      <p className="text-sm leading-relaxed text-white/85">
+                        {currentQuestion.question_text}
+                      </p>
+                    </div>
+
+                    {/* options */}
+                    <div className="space-y-2">
+                      {currentQuestion.options.map(opt => {
+                        const isSelected = selectedAnswer === opt.option_label
+                        return (
+                          <button
+                            key={opt.option_label}
+                            onClick={() => onAnswer(currentQuestion.id, opt.option_label)}
+                            className={`w-full flex items-center gap-3 p-3.5 rounded-xl border
+                              text-left transition-all duration-150 group ${
+                                isSelected
+                                  ? 'bg-orange-500/8 border-orange-500/35 shadow-[0_0_12px_rgba(234,88,12,0.08)]'
+                                  : 'bg-white/[0.01] border-white/[0.06] hover:border-white/15 hover:bg-white/[0.03]'
+                              }`}
+                          >
+                            {/* label badge */}
+                            <div className={`w-7 h-7 rounded-lg flex items-center justify-center
+                              text-[10px] font-black shrink-0 transition-all ${
+                                isSelected
+                                  ? 'bg-orange-500 border-0 text-white'
+                                  : 'bg-white/[0.04] border border-white/[0.08] text-slate-600 group-hover:border-white/15 group-hover:text-slate-400'
+                              }`}>
+                              {opt.option_label}
+                            </div>
+                            <span className={`text-[12px] leading-snug transition-colors ${
+                              isSelected ? 'text-white' : 'text-slate-500 group-hover:text-slate-300'
+                            }`}>
+                              {opt.option_text}
+                            </span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </motion.div>
+                </AnimatePresence>
+              )}
             </div>
-          ) : (
-            // Question View
-            <div className="space-y-6">
-              {/* Progress */}
-              <div className="flex items-center justify-between text-[10px] text-gray-500">
-                <span className="tracking-widest uppercase">Question {currentQuestionIndex + 1}/{totalProgress.total}</span>
-                <div className="w-32 h-1 overflow-hidden rounded-full bg-white/10">
-                  <div className="h-full rounded-full bg-emerald-500" style={{ width: `${totalProgress.percentage}%` }} />
+
+            {/* ── FOOTER ────────────────────────────────────────────────── */}
+            {!isLoading && (
+              <div className="flex items-center justify-between px-5 py-3 border-t border-white/[0.05] shrink-0 bg-[#030304]">
+
+                {/* kiri: prev / close */}
+                {!isComplete ? (
+                  <button
+                    onClick={onPrev}
+                    disabled={currentQuestionIndex === 0}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-black
+                      tracking-widest uppercase text-slate-600 border border-white/[0.05]
+                      hover:text-slate-400 hover:border-white/10 disabled:opacity-25
+                      transition-all"
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7"/>
+                    </svg>
+                    Sebelumnya
+                  </button>
+                ) : (
+                  <button
+                    onClick={onClose}
+                    className="px-3 py-1.5 rounded-lg text-[9px] font-black tracking-widest uppercase
+                      text-slate-600 border border-white/[0.05] hover:text-slate-400 hover:border-white/10
+                      transition-all"
+                  >
+                    Tutup
+                  </button>
+                )}
+
+                {/* kanan: next / submit / result actions */}
+                <div className="flex items-center gap-2">
+                  {!isComplete && currentQuestionIndex < totalProgress.total - 1 && (
+                    <button
+                      onClick={onNext}
+                      disabled={!selectedAnswer}
+                      className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg
+                        text-[9px] font-black tracking-widest uppercase transition-all ${
+                          selectedAnswer
+                            ? 'bg-orange-600 hover:bg-orange-500 text-white border border-orange-500/50 active:scale-95 shadow-[0_0_12px_rgba(234,88,12,0.2)]'
+                            : 'bg-white/[0.03] border border-white/[0.06] text-slate-700 cursor-not-allowed'
+                        }`}
+                    >
+                      Lanjut
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/>
+                      </svg>
+                    </button>
+                  )}
+
+                  {!isComplete && currentQuestionIndex === totalProgress.total - 1 && (
+                    <button
+                      onClick={onSubmit}
+                      disabled={!allAnswered}
+                      className={`flex items-center gap-1.5 px-5 py-1.5 rounded-lg
+                        text-[9px] font-black tracking-widest uppercase transition-all ${
+                          allAnswered
+                            ? 'bg-orange-600 hover:bg-orange-500 text-white border border-orange-500/50 active:scale-95 shadow-[0_0_12px_rgba(234,88,12,0.2)]'
+                            : 'bg-white/[0.03] border border-white/[0.06] text-slate-700 cursor-not-allowed'
+                        }`}
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                      </svg>
+                      Kumpulkan
+                    </button>
+                  )}
+
+                  {isComplete && result && !result.passed && (
+                    <button
+                      onClick={onRetry}
+                      className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg
+                        bg-white/[0.04] hover:bg-white/[0.07] text-white
+                        text-[9px] font-black tracking-widest uppercase
+                        border border-white/10 active:scale-95 transition-all"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                      </svg>
+                      Coba Lagi
+                    </button>
+                  )}
+
+                  {isComplete && result && result.passed && (
+                    <button
+                      onClick={onNextTopic}
+                      className="flex items-center gap-1.5 px-5 py-1.5 rounded-lg
+                        bg-orange-600 hover:bg-orange-500 text-white
+                        text-[9px] font-black tracking-widest uppercase
+                        border border-orange-500/50 active:scale-95
+                        shadow-[0_0_12px_rgba(234,88,12,0.2)] transition-all"
+                    >
+                      {nextTopicTitle
+                        ? <><span className="max-w-[120px] truncate">{nextTopicTitle}</span>
+                            <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/>
+                            </svg>
+                          </>
+                        : <>
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7"/>
+                            </svg>
+                            Selesai
+                          </>
+                      }
+                    </button>
+                  )}
                 </div>
               </div>
+            )}
 
-              {/* Question Text */}
-              <div className="p-4 border rounded-xl bg-purple-500/5 border-purple-500/20">
-                <p className="text-base leading-relaxed text-white">{currentQuestion?.question_text}</p>
-              </div>
-
-              {/* Options */}
-              <div className="space-y-2">
-                {currentQuestion?.options.map((option: any) => {
-                  const isSelected = selectedAnswer === option.option_label
-                  return (
-                    <button
-                      key={option.option_label}
-                      onClick={() => onAnswer(currentQuestion.id, option.option_label)}
-                      className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all ${
-                        isSelected
-                          ? 'bg-emerald-500/10 border-emerald-500/40'
-                          : 'bg-white/5 border-white/10 hover:border-white/20'
-                      }`}
-                    >
-                      <div className={`w-8 h-8 flex items-center justify-center rounded-lg text-xs font-bold transition-all ${
-                        isSelected ? 'bg-emerald-500 text-white' : 'bg-white/10 text-gray-400'
-                      }`}>
-                        {option.option_label}
-                      </div>
-                      <span className={`text-sm ${isSelected ? 'text-white' : 'text-gray-400'}`}>
-                        {option.option_text}
-                      </span>
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          )}
+          </motion.div>
         </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-between gap-4 p-5 border-t border-white/10 bg-black/30">
-          {!isComplete && (
-            <button
-              onClick={onPrev}
-              disabled={currentQuestionIndex === 0}
-              className="px-4 py-2 text-xs text-gray-400 transition-colors rounded-lg hover:text-white disabled:opacity-30"
-            >
-              ← Sebelumnya
-            </button>
-          )}
-          
-          <div className="flex-1" />
-          
-          {!isComplete && currentQuestionIndex === totalProgress.total - 1 ? (
-            <button
-              onClick={onSubmit}
-              disabled={answers.length < totalProgress.total}
-              className="px-6 py-2 text-xs font-bold text-white transition-all bg-emerald-600 rounded-xl hover:bg-emerald-500 disabled:opacity-50"
-            >
-              Submit Quiz
-            </button>
-          ) : !isComplete && (
-            <button
-              onClick={onNext}
-              disabled={!selectedAnswer}
-              className="px-6 py-2 text-xs font-bold text-white transition-all bg-emerald-600 rounded-xl hover:bg-emerald-500 disabled:opacity-50"
-            >
-              Selanjutnya →
-            </button>
-          )}
-
-          {isComplete && result && (
-            <div className="flex gap-3">
-              {!result.passed && (
-                <button
-                  onClick={onRetry}
-                  className="px-6 py-2 text-xs font-bold text-white transition-all bg-purple-600 rounded-xl hover:bg-purple-500"
-                >
-                  Coba Lagi
-                </button>
-              )}
-              {result.passed && (
-                <button
-                  onClick={onNextTopic}
-                  className="px-6 py-2 text-xs font-bold text-white transition-all bg-emerald-600 rounded-xl hover:bg-emerald-500"
-                >
-                  {nextTopicTitle ? `Lanjut: ${nextTopicTitle} →` : 'Selesai'}
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-      </motion.div>
-    </div>
+      )}
+    </AnimatePresence>
   )
 }
