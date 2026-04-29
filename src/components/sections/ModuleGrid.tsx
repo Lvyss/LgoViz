@@ -203,7 +203,7 @@ function ModuleCard({ module, index }: { module: Module, index: number }) {
       transition={{ delay: index * 0.15 }}
       className="[perspective:1000px]"
     >
-      <Link href={`/learn/${module.id}/${firstTopic}`} className="relative block h-full group">
+      <Link href={`/dashboard`} className="relative block h-full group">
         <div className="relative h-full overflow-hidden rounded-[2rem] border border-white/5 bg-[#080808] p-8 transition-all duration-500 group-hover:border-orange-500/20 group-hover:bg-[#0A0A0A] group-hover:shadow-[0_20px_50px_rgba(249,115,22,0.05)]">
           
           {/* ICON */}

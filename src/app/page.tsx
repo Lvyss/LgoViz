@@ -62,7 +62,7 @@ export default function LandingPage() {
             className="flex flex-col items-center justify-center gap-10 sm:flex-row"
           >
             <Link
-              href="/auth/register"
+              href="/dashboard"
               className="px-14 py-4 bg-white text-black text-[13px] font-bold rounded-full hover:bg-orange-500 hover:text-white transition-all duration-500 shadow-[0_0_30px_rgba(255,255,255,0.05)] active:scale-95"
             >
               Mulai Belajar Gratis

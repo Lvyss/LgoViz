@@ -140,13 +140,13 @@ export default function HeroSection() {
               className="flex flex-col items-center gap-5 mt-8 font-poppins"
             >
               <Link 
-                href="/auth/register" 
+                href="/dashboard" 
                 className="px-8 py-2.5 text-sm font-medium text-black transition-all duration-300 bg-white rounded-full hover:scale-105 hover:bg-gray-100"
               >
                 Mulai Belajar Gratis
               </Link>
               
-              <Link href="/modules" className="flex items-center gap-2 group">
+              <Link href="/dashboard" className="flex items-center gap-2 group">
                 <span className="text-white/60 text-[9px] uppercase tracking-[0.3em] group-hover:text-white transition duration-300">
                   Lihat Modul
                 </span>
