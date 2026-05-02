@@ -1,12 +1,45 @@
 'use client'
 
+import { useEffect } from 'react'
+import { usePathname } from 'next/navigation'
 import FeatureSection from '@/components/sections/FeatureSection'
 import HeroSection from '@/components/sections/HeroSection'
 import ModuleGrid from '@/components/sections/ModuleGrid'
+import Footer from '@/components/layout/Footer'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 
 export default function LandingPage() {
+  const pathname = usePathname()
+
+  // Handle hash dari URL untuk mobile
+  useEffect(() => {
+    if (pathname === '/' && window.location.hash) {
+      const sectionId = window.location.hash.slice(1)
+      const tryScroll = () => {
+        const section = document.getElementById(sectionId)
+        if (section) {
+          const navbarHeight = 56
+          const elementPosition = section.getBoundingClientRect().top
+          const offsetPosition = elementPosition + window.scrollY - navbarHeight
+          window.scrollTo({ top: offsetPosition, behavior: 'smooth' })
+          return true
+        }
+        return false
+      }
+
+      if (!tryScroll()) {
+        let attempts = 0
+        const interval = setInterval(() => {
+          attempts++
+          if (tryScroll() || attempts > 20) {
+            clearInterval(interval)
+          }
+        }, 100)
+      }
+    }
+  }, [pathname])
+
   return (
     <main className="bg-black">
       <HeroSection />
@@ -15,10 +48,7 @@ export default function LandingPage() {
       
       <section className="relative py-40 overflow-hidden bg-black font-poppins">
         
-        {/* Konten Utama */}
         <div className="relative z-10 max-w-4xl px-6 mx-auto text-center">
-          
-          {/* Label Kecil */}
           <motion.span 
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
@@ -28,7 +58,6 @@ export default function LandingPage() {
             Siap Memulai?
           </motion.span>
 
-          {/* Tipografi Tipis & Kuat */}
           <motion.h2 
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -40,7 +69,6 @@ export default function LandingPage() {
             <span className="font-serif italic text-white/30">bukan sekadar menghafal kode.</span>
           </motion.h2>
 
-          {/* Deskripsi Singkat */}
           <motion.p 
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
@@ -53,7 +81,6 @@ export default function LandingPage() {
             Semua gratis untuk siswa SMK RPL.
           </motion.p>
 
-          {/* Tombol Aksi Minimalis */}
           <motion.div 
             initial={{ opacity: 0, y: 10 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -62,7 +89,7 @@ export default function LandingPage() {
             className="flex flex-col items-center justify-center gap-10 sm:flex-row"
           >
             <Link
-              href="/dashboard"
+              href="/auth/register"
               className="px-14 py-4 bg-white text-black text-[13px] font-bold rounded-full hover:bg-orange-500 hover:text-white transition-all duration-500 shadow-[0_0_30px_rgba(255,255,255,0.05)] active:scale-95"
             >
               Mulai Belajar Gratis
@@ -78,12 +105,10 @@ export default function LandingPage() {
           </motion.div>
         </div>
 
-        {/* Garis Pemisah Molten (Signature) */}
         <div className="absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-orange-500/40 to-transparent" />
-        
-        {/* Ambient Glow Tipis */}
         <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1/2 h-20 bg-orange-600/5 blur-[100px] pointer-events-none" />
       </section>
+      <Footer />
     </main>
   )
 }

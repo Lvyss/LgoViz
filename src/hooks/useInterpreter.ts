@@ -108,97 +108,106 @@ export function useInterpreter(): UseInterpreterReturn {
   }, [isPlaying, trace, currentStep, speed, clearPlayInterval])
 
   // 🔥 Fungsi validasi challenge
-  const validateChallenge = useCallback(async (code: string, challenge: ChallengeConfig): Promise<ChallengeResult> => {
-    const result: ChallengeResult = {
-      passed: true,
-      errors: [],
-      details: {}
-    }
+const validateChallenge = useCallback(async (code: string, challenge: ChallengeConfig): Promise<ChallengeResult> => {
+  const result: ChallengeResult = {
+    passed: true,
+    errors: [],
+    details: {}
+  }
 
-    // 1. Cek kata kunci wajib
-    if (challenge.required_keywords && challenge.required_keywords.length > 0) {
-      for (const keyword of challenge.required_keywords) {
-        // Cek keyword sebagai whole word (bukan substring)
-        const wordRegex = new RegExp(`\\b${keyword}\\b`, 'i')
-        if (!wordRegex.test(code)) {
-          result.passed = false
-          result.errors.push(`Kata kunci '${keyword}' tidak ditemukan dalam kode`)
-        }
-      }
-    }
-
-    // 2. Cek variabel wajib
-    if (challenge.required_variables && challenge.required_variables.length > 0) {
-      for (const variable of challenge.required_variables) {
-        // Cek deklarasi variabel: tipe data + nama variabel
-        const varPattern = new RegExp(`(int|float|double|char|bool|string|long|short)\\s+${variable}\\s*[=;]`, 'i')
-        if (!varPattern.test(code)) {
-          result.passed = false
-          result.errors.push(`Variabel '${variable}' tidak dideklarasikan dengan benar`)
-        }
-      }
-    }
-
-    // 3. Eksekusi kode dan validasi output
-    if (challenge.expected_output) {
-      try {
-        let capturedOutput = ''
-        
-        // Handler untuk capture output
-        const captureOutput = (text: string) => {
-          capturedOutput += text
-        }
-        
-        // Eksekusi kode dengan evaluator
-        const executionResult = await evaluatePercabangan(code, {
-          onStep: (step) => {
-            // Collect output dari setiap step
-            if (step.output && step.output.length > 0) {
-              capturedOutput += step.output.join('')
-            }
-          },
-          onInput: async (varName: string, varType: string): Promise<string> => {
-            // Untuk challenge, gunakan nilai default
-            if (varType === 'int') return '0'
-            if (varType === 'bool') return 'false'
-            if (varType === 'char') return 'a'
-            return ''
-          }
-        })
-        
-        result.details!.output = capturedOutput.trim()
-        
-        // Cek apakah output mengandung expected_output
-        const expectedNormalized = challenge.expected_output.toLowerCase().replace(/\s+/g, ' ')
-        const outputNormalized = capturedOutput.toLowerCase().replace(/\s+/g, ' ')
-        
-        if (!outputNormalized.includes(expectedNormalized)) {
-          result.passed = false
-          result.errors.push(`Output tidak sesuai. Diharapkan: "${challenge.expected_output}", Output: "${capturedOutput.trim() || '(kosong)'}"`)
-        }
-        
-        // Capture variables dari step terakhir
-        if (executionResult.steps.length > 0) {
-          const lastStep = executionResult.steps[executionResult.steps.length - 1]
-          const varsObj: Record<string, any> = {}
-          lastStep.variables.forEach(v => {
-            varsObj[v.name] = v.value
-          })
-          result.details!.variables = varsObj
-        }
-        
-        if (executionResult.hasError) {
-          result.passed = false
-          result.errors.push(`Error eksekusi: ${executionResult.errorMessage || 'Unknown error'}`)
-        }
-      } catch (err: any) {
+  // 1. Cek kata kunci wajib
+  if (challenge.required_keywords && challenge.required_keywords.length > 0) {
+    for (const keyword of challenge.required_keywords) {
+      const wordRegex = new RegExp(`\\b${keyword}\\b`, 'i')
+      if (!wordRegex.test(code)) {
         result.passed = false
-        result.errors.push(`Error: ${err.message}`)
+        result.errors.push(`Kata kunci '${keyword}' tidak ditemukan dalam kode`)
       }
     }
+  }
 
-    return result
-  }, [])
+  // 2. Cek variabel wajib
+  if (challenge.required_variables && challenge.required_variables.length > 0) {
+    for (const variable of challenge.required_variables) {
+      const varPattern = new RegExp(`(int|float|double|char|bool|string|long|short)\\s+${variable}\\s*[=;]`, 'i')
+      if (!varPattern.test(code)) {
+        result.passed = false
+        result.errors.push(`Variabel '${variable}' tidak dideklarasikan dengan benar`)
+      }
+    }
+  }
+
+  // 🔥🔥🔥 3. Eksekusi kode dan validasi output (DIPERBAIKI) 🔥🔥🔥
+  if (challenge.expected_output) {
+    try {
+      let capturedOutput = ''
+      
+      // 🔥 Gunakan flag untuk menandai apakah onOutput sudah tersedia
+      // Jika evaluator sudah mendukung onOutput, kita bisa langsung pakai
+      // Tapi karena belum, kita tetap pakai onStep dengan cara yang lebih akurat
+      
+      // Eksekusi kode dengan evaluator
+      const executionResult = await evaluatePercabangan(code, {
+        onStep: (step) => {
+          // 🔥 Yang benar: ambil output yang FRESH dari step ini
+          // step.output berisi akumulasi, jadi kita harus ambil selisihnya
+          // Atau lebih simpel: kita catat output dari array langsung
+        },
+        onInput: async (varName: string, varType: string): Promise<string> => {
+          // Untuk challenge, gunakan nilai default
+          if (varType === 'int') return '0'
+          if (varType === 'bool') return 'false'
+          if (varType === 'char') return 'a'
+          if (varType === 'string') return 'test'
+          return '0'
+        }
+      })
+      
+      // 🔥 Cara alternatif: ekstrak output dari executionResult
+      // Karena evaluator menyimpan output di steps, kita bisa ambil dari step terakhir
+      if (executionResult.steps.length > 0) {
+        const lastStep = executionResult.steps[executionResult.steps.length - 1]
+        // output di step adalah array, gabungkan jadi string
+        capturedOutput = lastStep.output.join('')
+      }
+      
+      result.details!.output = capturedOutput.trim()
+      
+      // Normalisasi untuk perbandingan (case insensitive, hapus spasi berlebih)
+      const expectedNormalized = challenge.expected_output.toLowerCase().replace(/\s+/g, ' ').trim()
+      const outputNormalized = capturedOutput.toLowerCase().replace(/\s+/g, ' ').trim()
+      
+      console.log('📝 Challenge Validation Detail:')
+      console.log('   Expected:', expectedNormalized)
+      console.log('   Actual:', outputNormalized)
+      
+      if (!outputNormalized.includes(expectedNormalized)) {
+        result.passed = false
+        result.errors.push(`Output tidak sesuai. Diharapkan: "${challenge.expected_output}", Output: "${capturedOutput.trim() || '(kosong)'}"`)
+      }
+      
+      // Capture variables dari step terakhir
+      if (executionResult.steps.length > 0) {
+        const lastStep = executionResult.steps[executionResult.steps.length - 1]
+        const varsObj: Record<string, any> = {}
+        lastStep.variables.forEach(v => {
+          varsObj[v.name] = v.value
+        })
+        result.details!.variables = varsObj
+      }
+      
+      if (executionResult.hasError) {
+        result.passed = false
+        result.errors.push(`Error eksekusi: ${executionResult.errorMessage || 'Unknown error'}`)
+      }
+    } catch (err: any) {
+      result.passed = false
+      result.errors.push(`Error: ${err.message}`)
+    }
+  }
+
+  return result
+}, [])
 
   // Input handler dengan proper cleanup
   const createInputHandler = useCallback(() => {

@@ -19,6 +19,7 @@ export interface EvaluateOptions {
   onInput?: (variableName: string, variableType: string) => Promise<string>
   onStep?: (step: ExecutionStep) => void
   maxSteps?: number
+  onOutput?: (text: string) => void  // 🔥 TAMBAHKAN INI
 }
 
 export type EvaluatorType = 'percabangan' | 'perulangan' | 'struktur-data'

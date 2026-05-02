@@ -11,6 +11,7 @@ interface ChallengeModalProps {
     starter_code: string
     required_keywords: string[]
     required_variables: string[]
+    expected_output?: string  // ← TAMBAHKAN INI (opsional)
   }
   userCode: string
   onCodeChange: (code: string) => void
@@ -24,7 +25,7 @@ export default function ChallengeModal({
   onValidate, onClose, isCompleted,
 }: ChallengeModalProps) {
   const [validating, setValidating] = useState(false)
-  const [result, setResult]         = useState<{ passed: boolean; errors: string[] } | null>(null)
+  const [result, setResult] = useState<{ passed: boolean; errors: string[] } | null>(null)
 
   useEffect(() => { if (isOpen) setResult(null) }, [isOpen])
 
@@ -60,7 +61,6 @@ export default function ChallengeModal({
             {/* ── HEADER ─────────────────────────────────────────────────────── */}
             <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/[0.05] shrink-0">
               <div className="flex items-center gap-3">
-                {/* icon */}
                 <div className="flex items-center justify-center w-8 h-8 border rounded-lg bg-orange-500/10 border-orange-500/20">
                   <span className="text-sm">⚔️</span>
                 </div>
@@ -74,7 +74,6 @@ export default function ChallengeModal({
                 </div>
               </div>
 
-              {/* status pill + close */}
               <div className="flex items-center gap-3">
                 {isCompleted && (
                   <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full
@@ -114,6 +113,24 @@ export default function ChallengeModal({
                     {challenge.description}
                   </p>
                 </div>
+
+                {/* 🔥🔥🔥 EXPECTED OUTPUT (BARU) 🔥🔥🔥 */}
+                {challenge.expected_output && (
+                  <div className="p-4 border-b border-white/[0.04] bg-emerald-500/5">
+                    <p className="text-[8px] font-black tracking-[0.3em] text-emerald-400 uppercase mb-2.5">
+                      🎯 Output yang Diharapkan
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <code className="px-3 py-1.5 text-[11px] font-mono rounded-md
+                        bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-semibold">
+                        {challenge.expected_output}
+                      </code>
+                    </div>
+                    <p className="text-[8px] text-emerald-600/70 mt-2">
+                      Programmu harus menghasilkan output yang persis dengan di atas
+                    </p>
+                  </div>
+                )}
 
                 {/* required keywords */}
                 {challenge.required_keywords?.length > 0 && (
@@ -158,7 +175,8 @@ export default function ChallengeModal({
                     <span className="text-sm shrink-0">💡</span>
                     <p className="text-[9px] text-slate-600 leading-relaxed">
                       Pastikan semua keyword dan variabel yang diminta muncul di kodemu.
-                      Klik <span className="font-bold text-orange-500">Periksa</span> setelah selesai.
+                      <br />
+                      <span className="text-emerald-500">Output program harus sesuai yang diharapkan.</span>
                     </p>
                   </div>
                 </div>
@@ -261,7 +279,6 @@ export default function ChallengeModal({
 
             {/* ── FOOTER ─────────────────────────────────────────────────────── */}
             <div className="flex items-center justify-between px-5 py-3 border-t border-white/[0.05] shrink-0 bg-[#030304]">
-              {/* reset */}
               <button
                 onClick={handleReset}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-black
@@ -276,7 +293,6 @@ export default function ChallengeModal({
                 Reset Kode
               </button>
 
-              {/* aksi utama */}
               <div className="flex items-center gap-2">
                 <button
                   onClick={onClose}

@@ -14,6 +14,7 @@ interface Challenge {
   starter_code: string
   required_keywords: string[]
   required_variables: string[]
+  expected_output: string | null
   is_active: boolean
   created_at: string
 }
@@ -33,13 +34,14 @@ export default function AdminChallengesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingChallenge, setEditingChallenge] = useState<Challenge | null>(null)
   
-  // Form state - TANPA points
+  // Form state
   const [formData, setFormData] = useState({
     topic_id: '',
     description: '',
     starter_code: '',
     required_keywords: '',
     required_variables: '',
+    expected_output: '',
     is_active: true
   })
 
@@ -58,7 +60,7 @@ export default function AdminChallengesPage() {
     
     setTopics(topicsData || [])
     
-    // Load challenges with topic info - TANPA points
+    // Load challenges with topic info
     const { data: challengesData } = await supabase
       .from('challenges')
       .select(`
@@ -76,6 +78,7 @@ export default function AdminChallengesPage() {
       starter_code: c.starter_code,
       required_keywords: c.required_keywords || [],
       required_variables: c.required_variables || [],
+      expected_output: c.expected_output || null,
       is_active: c.is_active,
       created_at: c.created_at
     }))
@@ -92,6 +95,7 @@ export default function AdminChallengesPage() {
       starter_code: '#include <iostream>\nusing namespace std;\n\nint main() {\n    \n    return 0;\n}',
       required_keywords: '',
       required_variables: '',
+      expected_output: '',
       is_active: true
     })
     setIsModalOpen(true)
@@ -105,6 +109,7 @@ export default function AdminChallengesPage() {
       starter_code: challenge.starter_code,
       required_keywords: challenge.required_keywords?.join(', ') || '',
       required_variables: challenge.required_variables?.join(', ') || '',
+      expected_output: challenge.expected_output || '',
       is_active: challenge.is_active
     })
     setIsModalOpen(true)
@@ -124,6 +129,7 @@ export default function AdminChallengesPage() {
       starter_code: formData.starter_code,
       required_keywords: formData.required_keywords ? formData.required_keywords.split(',').map(k => k.trim()).filter(k => k) : [],
       required_variables: formData.required_variables ? formData.required_variables.split(',').map(v => v.trim()).filter(v => v) : [],
+      expected_output: formData.expected_output || null,
       is_active: formData.is_active
     }
     
@@ -300,7 +306,16 @@ export default function AdminChallengesPage() {
                       {/* Description */}
                       <p className="mt-2 text-sm text-gray-300 line-clamp-2">{challenge.description}</p>
 
-                      {/* Tags - TANPA points */}
+                      {/* Expected Output Badge - 🔥 BARU 🔥 */}
+                      {challenge.expected_output && (
+                        <div className="flex items-center gap-2 mt-2">
+                          <span className="text-[8px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                            🎯 Output: "{challenge.expected_output}"
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Tags */}
                       <div className="flex flex-wrap gap-2 mt-3">
                         {challenge.required_keywords?.slice(0, 3).map((kw) => (
                           <span key={kw} className="text-[8px] px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20">
@@ -322,7 +337,7 @@ export default function AdminChallengesPage() {
         </div>
       )}
 
-      {/* MODAL FORM - TANPA Points */}
+      {/* MODAL FORM */}
       <AnimatePresence>
         {isModalOpen && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -372,6 +387,23 @@ export default function AdminChallengesPage() {
                     className="w-full px-5 py-3 text-sm text-gray-300 border rounded-2xl bg-white/[0.02] border-white/10 focus:outline-none focus:border-purple-500 transition-all"
                     placeholder="Describe what students need to accomplish..."
                   />
+                </div>
+
+                {/* 🔥🔥🔥 EXPECTED OUTPUT - BARU 🔥🔥🔥 */}
+                <div>
+                  <label className="block mb-2 text-[10px] font-black text-emerald-500 uppercase tracking-widest">
+                    Expected Output 🎯
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.expected_output}
+                    onChange={(e) => setFormData({ ...formData, expected_output: e.target.value })}
+                    placeholder="Contoh: LULUS atau NEGATIF atau Maret"
+                    className="w-full px-5 py-3 text-sm text-white border rounded-2xl bg-white/[0.02] border-white/10 focus:outline-none focus:border-emerald-500 transition-all"
+                  />
+                  <p className="text-[8px] text-gray-600 mt-1">
+                    Tulis output yang diharapkan dari program (akan dicek otomatis). Kosongkan jika tidak ingin dicek.
+                  </p>
                 </div>
 
                 {/* Starter Code */}

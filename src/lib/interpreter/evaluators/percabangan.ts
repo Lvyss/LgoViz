@@ -615,18 +615,24 @@ if (line.startsWith('cin')) {
   idx++; continue
 }
 
-    // ── 14. COUT ──────────────────────────────────────────────────
-    if (line.startsWith('cout')) {
-      if (!currentSkipMode) {
-        console.log(`  → TYPE: COUT (executing)`)
-        const outputText = evalCout(line)
-        addOutput(outputText)
-        recordStep(lineNum, `📤 Output: "${outputText.replace(/\n/g, '\\n')}"`)
-      } else {
-        console.log(`  → TYPE: COUT (skipped)`)
-      }
-      idx++; continue
+// ── 14. COUT ──────────────────────────────────────────────────
+if (line.startsWith('cout')) {
+  if (!currentSkipMode) {
+    console.log(`  → TYPE: COUT (executing)`)
+    const outputText = evalCout(line)
+    addOutput(outputText)
+    
+    // 🔥 TAMBAHKAN INI: Kirim output ke callback
+    if (options?.onOutput) {
+      options.onOutput(outputText)
     }
+    
+    recordStep(lineNum, `📤 Output: "${outputText.replace(/\n/g, '\\n')}"`)
+  } else {
+    console.log(`  → TYPE: COUT (skipped)`)
+  }
+  idx++; continue
+}
 
     // ── 15. ASSIGNMENT ────────────────────────────────────────────
     const assignMatch = line.match(/^(\w+)\s*=\s*(.+?);?$/)

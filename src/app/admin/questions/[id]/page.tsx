@@ -11,6 +11,13 @@ interface Topic {
   module_id: string
 }
 
+interface Option {
+  id: string
+  label: string
+  text: string
+  is_correct: boolean
+}
+
 export default function EditQuestionPage() {
   const router = useRouter()
   const params = useParams()
@@ -26,12 +33,7 @@ export default function EditQuestionPage() {
     topic_id: '',
     question_text: '',
     is_active: true,
-    options: [
-      { id: '', label: 'A', text: '', is_correct: false },
-      { id: '', label: 'B', text: '', is_correct: false },
-      { id: '', label: 'C', text: '', is_correct: false },
-      { id: '', label: 'D', text: '', is_correct: false },
-    ]
+    options: [] as Option[]
   })
 
   useEffect(() => {
@@ -62,27 +64,82 @@ export default function EditQuestionPage() {
         .from('question_options')
         .select('*')
         .eq('question_id', questionId)
+        .order('option_label')
       
-      const optionsMap: Record<string, any> = {}
-      options?.forEach(opt => {
-        optionsMap[opt.option_label] = opt
-      })
-      
-      setFormData({
-        id: question.id,
-        topic_id: question.topic_id,
-        question_text: question.question_text,
-        is_active: question.is_active,
-        options: [
-          { id: optionsMap['A']?.id || '', label: 'A', text: optionsMap['A']?.option_text || '', is_correct: optionsMap['A']?.is_correct || false },
-          { id: optionsMap['B']?.id || '', label: 'B', text: optionsMap['B']?.option_text || '', is_correct: optionsMap['B']?.is_correct || false },
-          { id: optionsMap['C']?.id || '', label: 'C', text: optionsMap['C']?.option_text || '', is_correct: optionsMap['C']?.is_correct || false },
-          { id: optionsMap['D']?.id || '', label: 'D', text: optionsMap['D']?.option_text || '', is_correct: optionsMap['D']?.is_correct || false },
-        ]
-      })
+      if (options && options.length > 0) {
+        setFormData({
+          id: question.id,
+          topic_id: question.topic_id,
+          question_text: question.question_text,
+          is_active: question.is_active,
+          options: options.map(opt => ({
+            id: opt.id,
+            label: opt.option_label,
+            text: opt.option_text,
+            is_correct: opt.is_correct
+          }))
+        })
+      } else {
+        // Fallback ke default 4 opsi
+        setFormData({
+          id: question.id,
+          topic_id: question.topic_id,
+          question_text: question.question_text,
+          is_active: question.is_active,
+          options: [
+            { id: '', label: 'A', text: '', is_correct: false },
+            { id: '', label: 'B', text: '', is_correct: false },
+            { id: '', label: 'C', text: '', is_correct: false },
+            { id: '', label: 'D', text: '', is_correct: false },
+          ]
+        })
+      }
     }
     
     setLoading(false)
+  }
+
+  // Fungsi refresh label otomatis
+  const refreshOptionLabels = (options: Option[]): Option[] => {
+    return options.map((opt, idx) => ({
+      ...opt,
+      label: String.fromCharCode(65 + idx) // A, B, C, D...
+    }))
+  }
+
+  // Tambah opsi baru
+  const addOption = () => {
+    if (formData.options.length >= 10) {
+      alert('Maksimal 10 pilihan jawaban')
+      return
+    }
+    const newOptions = refreshOptionLabels([
+      ...formData.options,
+      { id: '', label: '', text: '', is_correct: false }
+    ])
+    setFormData(prev => ({ ...prev, options: newOptions }))
+  }
+
+  // Hapus opsi
+  const removeOption = (index: number) => {
+    if (formData.options.length <= 2) {
+      alert('Minimal 2 pilihan jawaban')
+      return
+    }
+    
+    const isRemovingCorrect = formData.options[index].is_correct
+    let newOptions = formData.options.filter((_, i) => i !== index)
+    
+    // Jika yang dihapus adalah jawaban benar, reset ke opsi pertama
+    if (isRemovingCorrect && newOptions.length > 0) {
+      newOptions = newOptions.map((opt, i) => ({
+        ...opt,
+        is_correct: i === 0
+      }))
+    }
+    
+    newOptions = refreshOptionLabels(newOptions)
+    setFormData(prev => ({ ...prev, options: newOptions }))
   }
 
   function updateOption(index: number, text: string) {
@@ -91,10 +148,10 @@ export default function EditQuestionPage() {
     setFormData(prev => ({ ...prev, options: newOptions }))
   }
 
-  function setCorrectOption(label: string) {
-    const newOptions = formData.options.map(opt => ({
+  function setCorrectOption(index: number) {
+    const newOptions = formData.options.map((opt, i) => ({
       ...opt,
-      is_correct: opt.label === label
+      is_correct: i === index
     }))
     setFormData(prev => ({ ...prev, options: newOptions }))
   }
@@ -107,13 +164,15 @@ export default function EditQuestionPage() {
       return
     }
     
-    const hasEmptyOption = formData.options.some(opt => !opt.text.trim())
-    if (hasEmptyOption) {
-      alert('Isi semua pilihan jawaban')
+    // Filter opsi yang tidak kosong
+    const filledOptions = formData.options.filter(opt => opt.text.trim() !== '')
+    
+    if (filledOptions.length < 2) {
+      alert('Minimal 2 pilihan jawaban yang diisi')
       return
     }
     
-    const hasCorrect = formData.options.some(opt => opt.is_correct)
+    const hasCorrect = filledOptions.some(opt => opt.is_correct)
     if (!hasCorrect) {
       alert('Pilih satu jawaban yang benar')
       return
@@ -128,6 +187,7 @@ export default function EditQuestionPage() {
         topic_id: formData.topic_id,
         question_text: formData.question_text,
         is_active: formData.is_active,
+        updated_at: new Date().toISOString()
       })
       .eq('id', formData.id)
     
@@ -137,20 +197,34 @@ export default function EditQuestionPage() {
       return
     }
     
-    // Update options
+    // Dapatkan semua option IDs yang ada di DB
+    const { data: existingOptions } = await supabase
+      .from('question_options')
+      .select('id, option_label')
+      .eq('question_id', formData.id)
+    
+    const existingIds = new Set(existingOptions?.map(opt => opt.id) || [])
+    const keptIds = new Set<string>()
+    
+    // Update atau insert options
     for (const opt of formData.options) {
-      if (opt.id) {
+      // Skip option yang kosong
+      if (!opt.text.trim()) continue
+      
+      if (opt.id && existingIds.has(opt.id)) {
         // Update existing
         await supabase
           .from('question_options')
           .update({
+            option_label: opt.label,
             option_text: opt.text,
             is_correct: opt.is_correct
           })
           .eq('id', opt.id)
+        keptIds.add(opt.id)
       } else {
-        // Insert new
-        await supabase
+        // Insert new (tanpa id)
+        const { error: insertError } = await supabase
           .from('question_options')
           .insert({
             question_id: formData.id,
@@ -158,12 +232,29 @@ export default function EditQuestionPage() {
             option_text: opt.text,
             is_correct: opt.is_correct
           })
+        
+        if (insertError) {
+          console.error('Insert error:', insertError)
+          alert(`Gagal menyimpan opsi ${opt.label}: ${insertError.message}`)
+          setSaving(false)
+          return
+        }
       }
+    }
+    
+    // Hapus option yang tidak ada di form (sudah dihapus user)
+    const toDelete = Array.from(existingIds).filter(id => !keptIds.has(id))
+    if (toDelete.length > 0) {
+      await supabase
+        .from('question_options')
+        .delete()
+        .in('id', toDelete)
     }
     
     router.push('/admin/questions')
   }
 
+  // Group topics by module
   const topicsByModule: Record<string, Topic[]> = {}
   topics.forEach(topic => {
     if (!topicsByModule[topic.module_id]) {
@@ -178,7 +269,7 @@ export default function EditQuestionPage() {
     'struktur-data': '📊 Struktur Data'
   }
 
-if (loading) {
+  if (loading) {
     return (
       <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
         <div className="w-12 h-12 border-2 rounded-full border-orange-500 border-t-transparent animate-spin shadow-[0_0_15px_rgba(249,115,22,0.4)]" />
@@ -213,7 +304,7 @@ if (loading) {
           {/* LEFT SIDE: CONTROL PANEL */}
           <div className="space-y-6 md:col-span-1">
             <div className="p-6 border rounded-[2rem] bg-[#080808] border-white/5 space-y-6 shadow-2xl relative overflow-hidden">
-               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-600 to-transparent opacity-30" />
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-600 to-transparent opacity-30" />
               
               {/* Toggle Status */}
               <div>
@@ -252,6 +343,13 @@ if (loading) {
                   ))}
                 </select>
               </div>
+
+              {/* Info jumlah opsi */}
+              <div className="pt-4 border-t border-white/5">
+                <p className="text-[9px] font-mono text-gray-500 uppercase leading-relaxed">
+                  Total Options: {formData.options.filter(o => o.text.trim()).length} / {formData.options.length}
+                </p>
+              </div>
             </div>
           </div>
 
@@ -259,11 +357,20 @@ if (loading) {
           <div className="space-y-6 md:col-span-2">
             {/* Question Textarea */}
             <div className="p-8 border rounded-[2.5rem] bg-[#080808] border-white/5 shadow-2xl">
-              <label className="block mb-4 text-[10px] font-black text-orange-500/80 uppercase tracking-[0.2em]">Source_Content</label>
+              <div className="flex items-center justify-between mb-4">
+                <label className="text-[10px] font-black text-orange-500/80 uppercase tracking-[0.2em]">Source_Content</label>
+                <button
+                  type="button"
+                  onClick={addOption}
+                  className="px-4 py-2 text-[10px] font-black uppercase tracking-wider transition-all rounded-xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 hover:bg-emerald-500/20"
+                >
+                  + Add Option
+                </button>
+              </div>
               <textarea
                 value={formData.question_text}
                 onChange={(e) => setFormData(prev => ({ ...prev, question_text: e.target.value }))}
-                rows={5}
+                rows={4}
                 className="w-full px-6 py-5 text-sm font-medium text-white border rounded-[1.5rem] bg-black/40 border-white/5 focus:outline-none focus:border-orange-500/50 focus:bg-black/60 transition-all leading-relaxed"
                 required
               />
@@ -274,9 +381,9 @@ if (loading) {
               <label className="block mb-6 text-[10px] font-black text-orange-500/80 uppercase tracking-[0.2em]">Response_Variants</label>
               <div className="space-y-4">
                 {formData.options.map((opt, idx) => (
-                  <div key={opt.label} className="flex items-center gap-4 group">
+                  <div key={idx} className="flex items-center gap-4 group">
                     <div className={`
-                      w-12 h-12 flex items-center justify-center rounded-2xl font-black text-xs transition-all duration-300
+                      w-12 h-12 flex items-center justify-center rounded-2xl font-black text-xs transition-all duration-300 shrink-0
                       ${opt.is_correct 
                         ? 'bg-orange-600 text-white shadow-[0_0_20px_rgba(234,88,12,0.4)]' 
                         : 'bg-white/[0.03] text-gray-600 border border-white/5'
@@ -293,14 +400,23 @@ if (loading) {
                     />
                     <button
                       type="button"
-                      onClick={() => setCorrectOption(opt.label)}
-                      className={`h-12 px-5 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all ${
+                      onClick={() => setCorrectOption(idx)}
+                      className={`h-12 px-5 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all shrink-0 ${
                         opt.is_correct
                           ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
-                          : 'bg-white/[0.03] text-gray-500 hover:text-white border border-white/5'
+                          : 'bg-white/[0.03] text-gray-500 hover:text-white border border-white/5 hover:border-white/20'
                       }`}
                     >
-                      {opt.is_correct ? 'Correct' : 'Mark'}
+                      {opt.is_correct ? '✓ Correct' : '○ Mark'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => removeOption(idx)}
+                      className="flex items-center justify-center w-12 h-12 text-red-500 transition-all border rounded-2xl bg-red-500/10 border-red-500/20 hover:bg-red-500/20 shrink-0"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
                     </button>
                   </div>
                 ))}

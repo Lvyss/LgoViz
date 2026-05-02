@@ -54,9 +54,14 @@ interface TopicWithStatus extends Topic {
   status: 'locked' | 'unlocked' | 'completed'; bestScore: number
 }
 interface Challenge {
-  id: string; topic_id: string; description: string
-  starter_code: string; required_keywords: string[]
-  required_variables: string[]; is_active: boolean
+  id: string
+  topic_id: string
+  description: string
+  starter_code: string
+  required_keywords: string[]
+  required_variables: string[]
+  is_active: boolean
+  expected_output?: string  // ← TAMBAHKAN
 }
 
 // ─── STATUS ICON ───────────────────────────────────────────────────────────────
@@ -323,24 +328,26 @@ const [showTutorial, setShowTutorial] = useState(false)
     )
   }, [selectedTopicId])
 
-  // load challenge
-  useEffect(() => {
-    if (!selectedTopicId || !userId) return
-    async function load() {
-      const { data: c } = await supabase.from('challenges').select('*')
-        .eq('topic_id', selectedTopicId!).eq('is_active', true).maybeSingle()
-      setChallenge(c)
-      setChallengeCode(c?.starter_code
-        ? c.starter_code.replace(/\\n/g, '\n')
-        : '#include <iostream>\nusing namespace std;\n\nint main() {\n    \n    return 0;\n}')
-      if (c) {
-        const { data: att } = await supabase.from('user_challenge_attempts').select('passed')
-          .eq('user_id', userId!).eq('topic_id', selectedTopicId!).maybeSingle()
-        setChallengeCompleted(att?.passed || false)
-      } else { setChallengeCompleted(false) }
+// load challenge
+useEffect(() => {
+  if (!selectedTopicId || !userId) return
+  async function load() {
+    const { data: c } = await supabase.from('challenges').select('*')
+      .eq('topic_id', selectedTopicId!).eq('is_active', true).maybeSingle()
+    setChallenge(c)
+    setChallengeCode(c?.starter_code
+      ? c.starter_code.replace(/\\n/g, '\n')
+      : '#include <iostream>\nusing namespace std;\n\nint main() {\n    \n    return 0;\n}')
+    if (c) {
+      const { data: att } = await supabase.from('user_challenge_attempts').select('passed')
+        .eq('user_id', userId!).eq('topic_id', selectedTopicId!).maybeSingle()
+      setChallengeCompleted(att?.passed || false)
+    } else { 
+      setChallengeCompleted(false) 
     }
-    load()
-  }, [selectedTopicId, userId, supabase])
+  }
+  load()
+}, [selectedTopicId, userId, supabase])
 
   // load starter code
   useEffect(() => {
@@ -372,19 +379,28 @@ const finishTutorial = (skipForever: boolean) => {
 }
   const handleRunCode = async (code: string) => runCode(code, 'percabangan')
 
-  const handleChallengeValidate = async () => {
-    if (!challenge) return { passed: false, errors: ['Challenge tidak ditemukan'] }
-    const result = await validateChallenge(challengeCode, challenge)
-    if (result.passed) {
-      await supabase.from('user_challenge_attempts').upsert({
-        user_id: userId, topic_id: selectedTopicId,
-        code: challengeCode, passed: true, verified_at: new Date().toISOString()
-      })
-      setChallengeCompleted(true)
-      setShowChallenge(false)
-    }
-    return result
+const handleChallengeValidate = async () => {
+  if (!challenge) return { passed: false, errors: ['Challenge tidak ditemukan'] }
+  
+  // 🔥 Pastikan challenge punya expected_output
+  const result = await validateChallenge(challengeCode, {
+    ...challenge,
+    expected_output: challenge.expected_output  // ← pastikan ini ada
+  })
+  
+  if (result.passed) {
+    await supabase.from('user_challenge_attempts').upsert({
+      user_id: userId, 
+      topic_id: selectedTopicId,
+      code: challengeCode, 
+      passed: true, 
+      verified_at: new Date().toISOString()
+    })
+    setChallengeCompleted(true)
+    setShowChallenge(false)
   }
+  return result
+}
 
   const colors = moduleColors[moduleId] || moduleColors.percabangan
   const completedCount = topics.filter(t => t.status === 'completed').length
@@ -721,17 +737,23 @@ const finishTutorial = (skipForever: boolean) => {
         content={materialContent}
       />
 
-      {challenge && (
-        <ChallengeModal
-          isOpen={showChallenge}
-          challenge={challenge}
-          userCode={challengeCode}
-          onCodeChange={setChallengeCode}
-          onValidate={handleChallengeValidate}
-          onClose={() => setShowChallenge(false)}
-          isCompleted={challengeCompleted}
-        />
-      )}
+{challenge && (
+  <ChallengeModal
+    isOpen={showChallenge}
+    challenge={{
+      description: challenge.description,
+      starter_code: challenge.starter_code,
+      required_keywords: challenge.required_keywords,
+      required_variables: challenge.required_variables,
+      expected_output: challenge.expected_output  // ← TAMBAHKAN INI
+    }}
+    userCode={challengeCode}
+    onCodeChange={setChallengeCode}
+    onValidate={handleChallengeValidate}
+    onClose={() => setShowChallenge(false)}
+    isCompleted={challengeCompleted}
+  />
+)}
 
       <QuizModal
         isOpen={showQuiz}
